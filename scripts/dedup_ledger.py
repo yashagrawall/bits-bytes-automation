@@ -14,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
-BASE_DIR = Path("/home/yashagrawall/bits-bytes-automation")
+BASE_DIR = Path(__file__).resolve().parent.parent
 HISTORY_JSON = BASE_DIR / "data" / "published_history.json"
 HISTORY_TXT = BASE_DIR / "data" / "published_history.txt"
 

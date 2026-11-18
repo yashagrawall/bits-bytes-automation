@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional
 
 from package_and_deliver import build_html_email, load_contacts
 
-BASE_DIR = Path("/home/yashagrawall/bits-bytes-automation")
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 GDRIVE_INIT = Path("/home/yashagrawall/.gemini/config/plugins/gdrive/skills/gdrive/scripts/gdrive")
 GDOCS_INIT = Path("/home/yashagrawall/.gemini/config/plugins/gdocs/skills/gdocs/scripts/gdocs")
