@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-BASE_DIR = Path("/home/yashagrawall/bits-bytes-automation")
+BASE_DIR = Path(__file__).resolve().parent.parent
 SOLE_LOGO_PATH = BASE_DIR / "SOLE Logo.png"
 IGIT_LOGO_PATH = BASE_DIR / "IGIT Sarang Logo.webp"
 
@@ -44,20 +44,25 @@ TEXT_LIGHT = (203, 213, 225)
 
 def get_font(name: str, size: int) -> ImageFont.FreeTypeFont:
     font_map = {
-        "black": FONT_DIR_MONTSERRAT / "Montserrat-Black.otf",
-        "extrabold": FONT_DIR_MONTSERRAT / "Montserrat-ExtraBold.otf",
-        "bold": FONT_DIR_MONTSERRAT / "Montserrat-Bold.otf",
-        "semibold": FONT_DIR_MONTSERRAT / "Montserrat-SemiBold.otf",
-        "medium": FONT_DIR_MONTSERRAT / "Montserrat-Medium.otf",
-        "regular": FONT_DIR_MONTSERRAT / "Montserrat-Regular.otf",
-        "italic": FONT_DIR_MONTSERRAT / "Montserrat-Italic.otf",
-        "serif_bold": FONT_DIR_CALADEA / "Caladea-Bold.ttf",
-        "serif_italic": FONT_DIR_LIBERATION_SERIF / "LiberationSerif-Italic.ttf",
-        "serif_regular": FONT_DIR_LIBERATION_SERIF / "LiberationSerif-Regular.ttf",
+        "black": [FONT_DIR_MONTSERRAT / "Montserrat-Black.otf", "Montserrat-Black.ttf", "Montserrat-Bold.ttf", "LiberationSans-Bold.ttf"],
+        "extrabold": [FONT_DIR_MONTSERRAT / "Montserrat-ExtraBold.otf", "Montserrat-ExtraBold.ttf", "Montserrat-Bold.ttf", "LiberationSans-Bold.ttf"],
+        "bold": [FONT_DIR_MONTSERRAT / "Montserrat-Bold.otf", "Montserrat-Bold.ttf", "LiberationSans-Bold.ttf"],
+        "semibold": [FONT_DIR_MONTSERRAT / "Montserrat-SemiBold.otf", "Montserrat-SemiBold.ttf", "Montserrat-Bold.ttf", "LiberationSans-Bold.ttf"],
+        "medium": [FONT_DIR_MONTSERRAT / "Montserrat-Medium.otf", "Montserrat-Medium.ttf", "Montserrat-Regular.ttf", "LiberationSans-Regular.ttf"],
+        "regular": [FONT_DIR_MONTSERRAT / "Montserrat-Regular.otf", "Montserrat-Regular.ttf", "LiberationSans-Regular.ttf"],
+        "italic": [FONT_DIR_MONTSERRAT / "Montserrat-Italic.otf", "Montserrat-Italic.ttf", "LiberationSans-Italic.ttf"],
+        "serif_bold": [FONT_DIR_CALADEA / "Caladea-Bold.ttf", "Caladea-Bold.ttf", "LiberationSerif-Bold.ttf"],
+        "serif_italic": [FONT_DIR_LIBERATION_SERIF / "LiberationSerif-Italic.ttf", "LiberationSerif-Italic.ttf", "Caladea-Italic.ttf"],
+        "serif_regular": [FONT_DIR_LIBERATION_SERIF / "LiberationSerif-Regular.ttf", "LiberationSerif-Regular.ttf", "Caladea-Regular.ttf"],
     }
-    path = font_map.get(name, font_map["regular"])
-    if path.exists():
-        return ImageFont.truetype(str(path), size)
+    candidates = font_map.get(name, font_map["regular"])
+    for cand in candidates:
+        if isinstance(cand, Path) and cand.exists():
+            return ImageFont.truetype(str(cand), size)
+        if isinstance(cand, str):
+            matches = list(Path("/usr/share/fonts").rglob(cand))
+            if matches:
+                return ImageFont.truetype(str(matches[0]), size)
     return ImageFont.load_default()
 
 

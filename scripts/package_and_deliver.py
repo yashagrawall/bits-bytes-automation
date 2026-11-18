@@ -19,7 +19,7 @@ from dedup_ledger import commit_selected, filter_and_rank_candidates
 from ghost_caption import build_captions
 from render_designs import render_package_designs
 
-BASE_DIR = Path("/home/yashagrawall/bits-bytes-automation")
+BASE_DIR = Path(__file__).resolve().parent.parent
 CONTACTS_PATH = BASE_DIR / "config" / "contacts.json"
 OUTPUT_ROOT = BASE_DIR / "output"
 
