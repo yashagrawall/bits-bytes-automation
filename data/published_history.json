@@ -2,11 +2,143 @@
   "metadata": {
     "project": "SOLE Bits & Bytes Automation (IGIT Sarang)",
     "created_at": "2026-11-18T23:58:00+05:30",
-    "last_updated": "2026-11-18T23:58:00+05:30",
+    "last_updated": "2026-11-19T01:28:33.251439+05:30",
     "drive_ledger_file_id": null
   },
-  "news": [],
+  "news": [
+    {
+      "category": "HIGHER EDUCATION & ODISHA",
+      "headline": "Technical Universities in Odisha Expand Semiconductor and Clean-Energy Research Labs",
+      "summary": "Public engineering institutes across Odisha announced new interdisciplinary fabrication and power-systems laboratories for undergraduate and postgraduate students. The initiative connects campus projects directly with national R&D grants.",
+      "source": "New Indian Express",
+      "url": "https://www.newindianexpress.com/states/odisha/tech-universities-semiconductor-labs",
+      "relevance_score": 9.9,
+      "popularity_score": 9.5,
+      "combined_score": 9.7,
+      "hash": "73085630b5ec04b2",
+      "date_added": "2026-11-19T01:28:33.251396+05:30"
+    },
+    {
+      "category": "SPACE & INDIA",
+      "headline": "ISRO Completes Key Gaganyaan Crew Module Propulsion Test Ahead of Orbital Mission",
+      "summary": "Indian Space Research Organisation engineers successfully validated the service module propulsion system under simulated mission durations. The milestone clears a major hardware qualification gate for India's upcoming human spaceflight program.",
+      "source": "ISRO / The Hindu",
+      "url": "https://www.thehindu.com/sci-tech/science/isro-gaganyaan-propulsion-test",
+      "relevance_score": 9.8,
+      "popularity_score": 9.6,
+      "combined_score": 9.7,
+      "hash": "13d9ec0506dbfc24",
+      "date_added": "2026-11-19T01:28:33.251396+05:30"
+    },
+    {
+      "category": "CAMPUS & CAREERS",
+      "headline": "Open-Source Fellowships Open Applications for Undergraduate Student Contributors",
+      "summary": "Major open-source foundations announced summer and winter mentorship cohorts covering systems programming, documentation, and technical writing. Selected students receive stipends and direct mentorship from project maintainers.",
+      "source": "Linux Foundation",
+      "url": "https://lfx.linuxfoundation.org/",
+      "relevance_score": 9.6,
+      "popularity_score": 9.5,
+      "combined_score": 9.55,
+      "hash": "acb3d8e6c6bf07d5",
+      "date_added": "2026-11-19T01:28:33.251396+05:30"
+    },
+    {
+      "category": "ARTIFICIAL INTELLIGENCE",
+      "headline": "Open-Weight Multimodal Models Reach Parity on Scientific Reasoning Benchmarks",
+      "summary": "New open-weight frontier models demonstrated strong accuracy across university-level physics, chemistry, and coding evaluations. Researchers noted that smaller quantized versions can now run locally on university lab workstations.",
+      "source": "Nature / ArXiv",
+      "url": "https://www.nature.com/articles/open-weight-scientific-models",
+      "relevance_score": 9.5,
+      "popularity_score": 9.4,
+      "combined_score": 9.45,
+      "hash": "e5c4504e69b34616",
+      "date_added": "2026-11-19T01:28:33.251396+05:30"
+    },
+    {
+      "category": "LITERATURE & CULTURE",
+      "headline": "International Booker Prize Shortlist Spotlights Translated Regional Fiction",
+      "summary": "Six works translated from five languages made this year's shortlist, highlighting independent presses and cross-cultural storytelling. Literary societies across universities have added the shortlisted translations to their reading circles.",
+      "source": "The Booker Prizes",
+      "url": "https://thebookerprizes.com/the-booker-library",
+      "relevance_score": 9.7,
+      "popularity_score": 9.1,
+      "combined_score": 9.4,
+      "hash": "1c1808adc722aa45",
+      "date_added": "2026-11-19T01:28:33.251396+05:30"
+    },
+    {
+      "category": "SCIENCE & TECH",
+      "headline": "UN Sustainable Development Goals group for science, technology rejigged",
+      "summary": "The group has been constituted even as the international community ramps up efforts to achieve the 2030 Agenda for Sustainable Development",
+      "source": "The Hindu Sci-Tech",
+      "url": "https://www.thehindu.com/sci-tech/science/un-sustainable-development-goals-group-for-science-technology-rejigged/article71716677.ece",
+      "relevance_score": 9.3,
+      "popularity_score": 9.2,
+      "combined_score": 9.25,
+      "hash": "16f59f9421809e4d",
+      "date_added": "2026-11-19T01:28:33.251396+05:30"
+    },
+    {
+      "category": "SCIENCE & TECH",
+      "headline": "China’s LineShine retains top spot on list of world’s most powerful supercomputers",
+      "summary": "The highest ranked Indian machine on the list is Shakti Cloud at number 35",
+      "source": "The Hindu Sci-Tech",
+      "url": "https://www.thehindu.com/sci-tech/science/lineshine-computers-defending-champ/article71712174.ece",
+      "relevance_score": 9.3,
+      "popularity_score": 9.2,
+      "combined_score": 9.25,
+      "hash": "4528c966a97ab68d",
+      "date_added": "2026-11-19T01:28:33.251396+05:30"
+    },
+    {
+      "category": "SCIENCE & TECH",
+      "headline": "Voyager 1, one light-day away from earth today, is a marvel of science",
+      "summary": "Measurements lying in the shadows of their successors can find new lives in the light of new theories. The Voyager 1 mission’s longevity made that more apparent, allowing successive generations of researchers to find more uses for its data even as it...",
+      "source": "The Hindu Sci-Tech",
+      "url": "https://www.thehindu.com/sci-tech/science/voyager-1-one-light-day-away-from-earth-today-is-a-marvel-of-science/article71708334.ece",
+      "relevance_score": 9.3,
+      "popularity_score": 9.2,
+      "combined_score": 9.25,
+      "hash": "0e550b89a32f2a65",
+      "date_added": "2026-11-19T01:28:33.251396+05:30"
+    },
+    {
+      "category": "TECHNOLOGY",
+      "headline": "Best Buy sells Blu-rays online and in-store again",
+      "summary": "Popular titles like The Odyssey are being “sold &#038; shipped by Best Buy.\"",
+      "source": "Ars Technica",
+      "url": "https://arstechnica.com/gadgets/2026/11/best-buy-sells-blu-rays-again-after-quitting-the-business-in-2024/",
+      "relevance_score": 9.3,
+      "popularity_score": 9.2,
+      "combined_score": 9.25,
+      "hash": "3f28f599b7d5ce78",
+      "date_added": "2026-11-19T01:28:33.251396+05:30"
+    },
+    {
+      "category": "TECHNOLOGY",
+      "headline": "Will Wright's next simulation will use AI to mine content from your memories",
+      "summary": "With MyMems , Wright says he wants to \"turn the simulation inward.\"",
+      "source": "Ars Technica",
+      "url": "https://arstechnica.com/gaming/2026/11/will-wrights-next-simulation-will-use-ai-to-mine-content-from-your-memories/",
+      "relevance_score": 9.3,
+      "popularity_score": 9.2,
+      "combined_score": 9.25,
+      "hash": "a8f40d0bd1ad8dad",
+      "date_added": "2026-11-19T01:28:33.251396+05:30"
+    }
+  ],
   "facts": [],
   "vocab": [],
-  "packages": []
+  "packages": [
+    {
+      "package_id": "2026-Nov-W3-Thursday_news",
+      "content_type": "news",
+      "run_date_iso": "2026-11-19",
+      "subject": "[2026-Nov-W3-Thursday] : Bits & Bytes Social Media Post : Weekly Top 10 News Highlights",
+      "manifest_path": "/home/runner/work/bits-bytes-automation/bits-bytes-automation/output/2026-Nov-W3-Thursday_news/package_manifest.json",
+      "email_sent": true,
+      "social_published": false,
+      "created_at": "2026-11-19T01:28:33.251396+05:30"
+    }
+  ]
 }
