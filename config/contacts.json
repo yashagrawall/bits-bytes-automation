@@ -1,0 +1,132 @@
+{
+  "organization": {
+    "college": "IGIT Sarang (Indira Gandhi Institute of Technology, Sarang)",
+    "club": "SOLE (Society Of Literary Enthusiasts)",
+    "sub_wing": "Bits & Bytes",
+    "instagram_handle": "@sole_igit",
+    "instagram_url": "https://www.instagram.com/sole_igit/"
+  },
+  "sender": {
+    "name": "Yash Agrawall",
+    "batch_branch": "43rd CSE",
+    "role": "Bits & Bytes SOLE",
+    "college": "IGIT Sarang",
+    "phone": "+91 72051 17574",
+    "email": "yashagrawall333@gmail.com",
+    "instagram_handle": "@yashagrawall",
+    "instagram_url": "https://www.instagram.com/yashagrawall/",
+    "linkedin_handle": "yash-agrawall",
+    "linkedin_url": "https://www.linkedin.com/in/yash-agrawall"
+  },
+  "recipients": {
+    "to": {
+      "social_media_leads": [
+        {
+          "name": "Soumya Priyasarshini",
+          "batch": "43rd",
+          "branch": "MECH",
+          "phone": "9937025992",
+          "email": "soumyapriyadarshini487@gmail.com"
+        },
+        {
+          "name": "Aditya Mistri",
+          "batch": "43rd",
+          "branch": "CHEM",
+          "phone": "9178904102",
+          "email": ""
+        }
+      ],
+      "design_leads": [
+        {
+          "name": "Abhishek Piyush Barla",
+          "batch": "43rd",
+          "branch": "",
+          "phone": "9556110595",
+          "email": "piyushbarla03@gmail.com"
+        }
+      ]
+    },
+    "cc": {
+      "final_year_bits_bytes_reps": [
+        {
+          "name": "Sibtar Zayeem",
+          "batch": "42nd",
+          "branch": "EEE",
+          "phone": "7809923260",
+          "email": "zayeemshaikh921@gmail.com"
+        },
+        {
+          "name": "Shruti Shreeyam",
+          "batch": "42nd",
+          "branch": "MECH",
+          "phone": "7008634133",
+          "email": "shruti28shreeyam@gmail.com"
+        }
+      ],
+      "prefinal_year_bits_bytes_reps": [
+        {
+          "name": "Yash Agrawall",
+          "batch": "43rd",
+          "branch": "CSE",
+          "phone": "7205117574",
+          "email": "yashagrawall333@gmail.com"
+        },
+        {
+          "name": "Phani Bhusan Rout",
+          "batch": "43rd",
+          "branch": "MECH",
+          "phone": "8260039633",
+          "email": "phanibhusanrout11@gmail.com"
+        }
+      ],
+      "final_year_lrs": [
+        {
+          "name": "Jangyaseni Paikray",
+          "batch": "42nd",
+          "branch": "EEE",
+          "phone": "9938672898",
+          "email": "jangyasenipaikaray2006@gmail.com"
+        }
+      ],
+      "prefinal_year_lrs": [
+        {
+          "name": "Saswat Dhal",
+          "batch": "43rd",
+          "branch": "MECH",
+          "phone": "7008696040",
+          "email": "saswatdhal7@gmail.com"
+        },
+        {
+          "name": "Payal Priyadarshani",
+          "batch": "43rd",
+          "branch": "",
+          "phone": "8895977707",
+          "email": "payalpradeep219@gmail.com"
+        }
+      ]
+    }
+  },
+  "schedule": {
+    "news": {
+      "content_type": "Weekly Top 10 News Highlights",
+      "mail_day": "Saturday",
+      "post_day": "Sunday",
+      "cron_mail": "CRON_TZ=Asia/Kolkata 0 18 * * 6",
+      "cron_post": "CRON_TZ=Asia/Kolkata 0 10 * * 0"
+    },
+    "facts": {
+      "content_type": "Random Facts",
+      "mail_day": "Tuesday",
+      "post_day": "Wednesday",
+      "cron_mail": "CRON_TZ=Asia/Kolkata 0 18 * * 2",
+      "cron_post": "CRON_TZ=Asia/Kolkata 0 10 * * 3"
+    },
+    "vocab": {
+      "content_type": "Random Vocabulary / Thesaurus",
+      "mail_day": "Wednesday",
+      "post_day": "Thursday",
+      "cron_mail": "CRON_TZ=Asia/Kolkata 0 18 * * 3",
+      "cron_post": "CRON_TZ=Asia/Kolkata 0 10 * * 4"
+    }
+  }
+}

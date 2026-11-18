@@ -1,0 +1,57 @@
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: bits-bytes-n8n
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:5678:5678"
+
+    environment:
+      - TZ=Asia/Kolkata
+      - GENERIC_TIMEZONE=Asia/Kolkata
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - N8N_RUNNERS_ENABLED=true
+      - WEBHOOK_URL=http://localhost:5678/
+      - BITS_BYTES_ENGINE_URL=http://bits-bytes-engine:8765
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./data:/home/node/bits-bytes-data
+      - ./output:/home/node/bits-bytes-output
+
+    depends_on:
+      - bits-bytes-engine
+
+  bits-bytes-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bits-bytes-engine
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:8765:8765"
+
+    env_file:
+      - path: ./.env
+        required: false
+
+    environment:
+      - TZ=Asia/Kolkata
+      - OLLAMA_URL=http://host.docker.internal:11434
+      - OLLAMA_MODEL=gemma4:e2b
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    volumes:
+      - ./data:/home/yashagrawall/bits-bytes-automation/data
+      - ./output:/home/yashagrawall/bits-bytes-automation/output
+      - ./config:/home/yashagrawall/bits-bytes-automation/config
+
+volumes:
+  n8n_data:

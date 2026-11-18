@@ -1,0 +1,11 @@
+# Secrets (Never commit .env)
+.env
+
+# Python bytecode & virtualenvs
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Ephemeral rendered output packages (keep data/published_history.* tracked)
+output/
