@@ -1,0 +1,94 @@
+{
+  "candidates": [
+    {
+      "category": "SPACE & INDIA",
+      "headline": "ISRO Completes Key Gaganyaan Crew Module Propulsion Test Ahead of Orbital Mission",
+      "summary": "Indian Space Research Organisation engineers successfully validated the service module propulsion system under simulated mission durations. The milestone clears a major hardware qualification gate for India's upcoming human spaceflight program.",
+      "source": "ISRO / The Hindu",
+      "url": "https://www.thehindu.com/sci-tech/science/isro-gaganyaan-propulsion-test",
+      "relevance_score": 9.8,
+      "popularity_score": 9.6
+    },
+    {
+      "category": "ARTIFICIAL INTELLIGENCE",
+      "headline": "Open-Weight Multimodal Models Reach Parity on Scientific Reasoning Benchmarks",
+      "summary": "New open-weight frontier models demonstrated strong accuracy across university-level physics, chemistry, and coding evaluations. Researchers noted that smaller quantized versions can now run locally on university lab workstations.",
+      "source": "Nature / ArXiv",
+      "url": "https://www.nature.com/articles/open-weight-scientific-models",
+      "relevance_score": 9.5,
+      "popularity_score": 9.4
+    },
+    {
+      "category": "LITERATURE & CULTURE",
+      "headline": "International Booker Prize Shortlist Spotlights Translated Regional Fiction",
+      "summary": "Six works translated from five languages made this year's shortlist, highlighting independent presses and cross-cultural storytelling. Literary societies across universities have added the shortlisted translations to their reading circles.",
+      "source": "The Booker Prizes",
+      "url": "https://thebookerprizes.com/the-booker-library",
+      "relevance_score": 9.7,
+      "popularity_score": 9.1
+    },
+    {
+      "category": "HIGHER EDUCATION & ODISHA",
+      "headline": "Technical Universities in Odisha Expand Semiconductor and Clean-Energy Research Labs",
+      "summary": "Public engineering institutes across Odisha announced new interdisciplinary fabrication and power-systems laboratories for undergraduate and postgraduate students. The initiative connects campus projects directly with national R&D grants.",
+      "source": "New Indian Express",
+      "url": "https://www.newindianexpress.com/states/odisha/tech-universities-semiconductor-labs",
+      "relevance_score": 9.9,
+      "popularity_score": 9.5
+    },
+    {
+      "category": "CLIMATE & ENERGY",
+      "headline": "Global Grid-Scale Battery Storage Capacity Doubles in Twelve Months",
+      "summary": "Falling lithium-iron-phosphate cell costs and sodium-ion utility deployments pushed grid storage installations past record megawatt-hour targets. Renewable grids can now dispatch solar power reliably through evening peak demand.",
+      "source": "IEA / Reuters",
+      "url": "https://www.reuters.com/sustainability/climate-energy/global-grid-battery-storage",
+      "relevance_score": 9.1,
+      "popularity_score": 8.9
+    },
+    {
+      "category": "COMPUTER SCIENCE",
+      "headline": "Linux Kernel Adopts Next-Generation Memory Safety Drivers in Mainline Release",
+      "summary": "Core kernel maintainers merged additional Rust-based subsystem abstractions for storage and network drivers. The update reduces buffer-overflow vulnerabilities in high-throughput server workloads.",
+      "source": "LWN.net",
+      "url": "https://lwn.net/Kernel/",
+      "relevance_score": 9.3,
+      "popularity_score": 8.8
+    },
+    {
+      "category": "BIOTECHNOLOGY",
+      "headline": "CRISPR Epigenetic Editors Silence Disease Genes Without Cutting DNA Strands",
+      "summary": "Molecular biologists demonstrated a durable epigenetic switch that turns off target genes via methylation without double-strand DNA breaks. The technique lowers off-target risk in therapeutic trials.",
+      "source": "Science Magazine",
+      "url": "https://www.science.org/journal/science",
+      "relevance_score": 8.9,
+      "popularity_score": 9.0
+    },
+    {
+      "category": "DIGITAL PUBLISHING",
+      "headline": "Public Domain Archives Digitize 50,000 Rare South Asian Literary Manuscripts",
+      "summary": "A coalition of university libraries opened free high-resolution access to palm-leaf manuscripts, early literary periodicals, and bilingual dictionaries. Students and historians can search the collection with OCR transcription.",
+      "source": "Internet Archive",
+      "url": "https://archive.org/details/texts",
+      "relevance_score": 9.4,
+      "popularity_score": 8.7
+    },
+    {
+      "category": "QUANTUM COMPUTING",
+      "headline": "Fault-Tolerant Logical Qubits Demonstrate Error Suppression Below Threshold",
+      "summary": "Physicists showed that scaling surface-code logical qubits reduced error rates exponentially as physical qubit counts increased. The experiment marks a shift from noisy quantum prototypes to fault-tolerant circuits.",
+      "source": "Physical Review Letters",
+      "url": "https://journals.aps.org/prl/",
+      "relevance_score": 9.0,
+      "popularity_score": 9.1
+    },
+    {
+      "category": "CAMPUS & CAREERS",
+      "headline": "Open-Source Fellowships Open Applications for Undergraduate Student Contributors",
+      "summary": "Major open-source foundations announced summer and winter mentorship cohorts covering systems programming, documentation, and technical writing. Selected students receive stipends and direct mentorship from project maintainers.",
+      "source": "Linux Foundation",
+      "url": "https://lfx.linuxfoundation.org/",
+      "relevance_score": 9.6,
+      "popularity_score": 9.5
+    }
+  ]
+}

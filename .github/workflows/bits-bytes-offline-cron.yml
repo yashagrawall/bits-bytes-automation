@@ -1,0 +1,79 @@
+name: SOLE Bits & Bytes — Offline Cloud Automation (Zero Cost)
+
+on:
+  schedule:
+    # Tuesday 6:00 PM IST (12:30 UTC) — Random Facts
+    - cron: "30 12 * * 2"
+    # Wednesday 6:00 PM IST (12:30 UTC) — Random Vocabulary / Thesaurus
+    - cron: "30 12 * * 3"
+    # Saturday 6:00 PM IST (12:30 UTC) — Weekly Top 10 News Highlights
+    - cron: "30 12 * * 6"
+  workflow_dispatch:
+    inputs:
+      content_type:
+        description: "Content type to generate & email (auto, news, facts, vocab)"
+        required: true
+        default: "auto"
+        type: choice
+        options:
+          - auto
+          - news
+          - facts
+          - vocab
+
+permissions:
+  contents: write
+
+jobs:
+  curate-design-and-email:
+    runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Kolkata
+      GMAIL_USER: ${{ secrets.GMAIL_USER }}
+      GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+    steps:
+      - name: Checkout repository & content history
+        uses: actions/checkout@v4
+
+      - name: Install Montserrat, Caladea & Liberation Serif Fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends fonts-montserrat fonts-crosextra-caladea fonts-liberation2 fontconfig
+          sudo mkdir -p /usr/share/fonts/julietaula-montserrat-fonts /usr/share/fonts/google-crosextra-caladea-fonts /usr/share/fonts/liberation-serif-fonts
+          find /usr/share/fonts -iname "Montserrat-*.otf" -o -iname "Montserrat-*.ttf" | while read -r f; do
+            sudo ln -sf "$f" "/usr/share/fonts/julietaula-montserrat-fonts/$(basename "${f%.*}").otf"
+          done
+          find /usr/share/fonts -iname "Caladea-*.ttf" | while read -r f; do
+            sudo ln -sf "$f" "/usr/share/fonts/google-crosextra-caladea-fonts/$(basename "$f")"
+          done
+          find /usr/share/fonts -iname "LiberationSerif-*.ttf" | while read -r f; do
+            sudo ln -sf "$f" "/usr/share/fonts/liberation-serif-fonts/$(basename "$f")"
+          done
+
+      - name: Set up Python & Pillow
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install Pillow
+
+      - name: Run Standalone Bits & Bytes Engine (Curate + Deduplicate + Render 1080x1350 Designs + /GHOST Caption + Send Email)
+        run: |
+          CTYPE="${{ github.event.inputs.content_type || 'auto' }}"
+          python3 scripts/standalone_engine.py --type "$CTYPE" --send-mail
+
+      - name: Upload Generated 1080x1350 PNGs & PDF as Workflow Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bits-bytes-social-package-${{ github.run_number }}
+          path: output/
+
+      - name: Commit Updated Deduplication History (published_history.json & .txt)
+        run: |
+          git config user.name "SOLE Bits & Bytes Bot"
+          git config user.email "sender@example.com"
+          git add data/published_history.json data/published_history.txt
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(history): record published Bits & Bytes content [skip ci]"
+            git push
+          fi

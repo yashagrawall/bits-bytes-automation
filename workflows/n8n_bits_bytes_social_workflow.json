@@ -1,0 +1,112 @@
+{
+  "name": "SOLE Bits & Bytes — Automated Social Media & Email Publisher",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bits-bytes-publish",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Antigravity Package Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.content_type }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "validate-package",
+      "name": "Validate Package & /GHOST Audit",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://graph.facebook.com/v21.0/{{ $env.IG_BUSINESS_ACCOUNT_ID }}/media",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "caption",
+              "value": "={{ $json.body.instagram_caption }}"
+            },
+            {
+              "name": "image_url",
+              "value": "={{ $json.body.drive_folder_url }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "instagram-publish",
+      "name": "Publish to Instagram (@sole_igit)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [760, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://api.linkedin.com/v2/ugcPosts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "specificContent.com.linkedin.ugc.ShareContent.shareCommentary.text",
+              "value": "={{ $json.body.linkedin_caption }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "linkedin-publish",
+      "name": "Publish to LinkedIn (SOLE IGIT Sarang)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [760, 400]
+    }
+  ],
+  "connections": {
+    "Antigravity Package Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Package & /GHOST Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Package & /GHOST Audit": {
+      "main": [
+        [
+          {
+            "node": "Publish to Instagram (@sole_igit)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Publish to LinkedIn (SOLE IGIT Sarang)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
