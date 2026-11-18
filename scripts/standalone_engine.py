@@ -371,7 +371,7 @@ def send_email_smtp(manifest: Dict[str, Any]) -> Dict[str, Any]:
     a free Gmail App Password.
     """
     gmail_user = os.environ.get("GMAIL_USER", "").strip()
-    gmail_app_password = os.environ.get("GMAIL_APP_PASSWORD", "").strip()
+    gmail_app_password = os.environ.get("GMAIL_APP_PASSWORD", "").replace(" ", "").strip()
     smtp_host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
     smtp_port = int(os.environ.get("SMTP_PORT", "587"))
 
