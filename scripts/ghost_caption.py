@@ -99,30 +99,30 @@ def build_captions(content_type: str, selected_items: List[Dict[str, Any]], week
         li_raw = ghost_sanitize(custom_caption["linkedin"])
         extra_tags = custom_caption.get("hashtags", [])
     elif content_type == "news":
-        top3 = [item.get("headline", "") for item in selected_items[:3]]
+        top1 = selected_items[0] if len(selected_items) > 0 else {}
+        top2 = selected_items[1] if len(selected_items) > 1 else {}
+        top3 = selected_items[2] if len(selected_items) > 2 else {}
         ig_lines = [
-            f"Missed what happened this week? Here are the 10 stories worth your time ({week_label}).",
+            f"10 big stories happened this week while you were busy with classes and labs ({week_label}).",
             "",
-            "From policy and science to tech and culture, our Bits & Bytes team picked the ten updates that actually matter:",
-            f"1. {top3[0] if len(top3) > 0 else ''}",
-            f"2. {top3[1] if len(top3) > 1 else ''}",
-            f"3. {top3[2] if len(top3) > 2 else ''}",
-            "...plus 7 more inside the carousel.",
+            "Here is a quick peek inside our Weekly News Highlights:",
+            f"- {top3.get('headline', '')}",
+            f"- {top2.get('headline', '')}",
+            f"- Plus our #01 highlight on Slide 7 ({top1.get('category', 'Campus Spotlight')}).",
             "",
-            "Swipe through all 10 slides for the full breakdown and sources.",
-            "Which story caught your attention first? Drop your take in the comments.",
+            "Swipe till the last slide and vote A, B, or C in our weekly poll.",
         ]
         li_lines = [
-            f"Bits & Bytes Weekly News Digest ({week_label}) | SOLE, IGIT Sarang",
+            f"Bits -N- Bytes Weekly News Highlights ({week_label}) | SOLE, IGIT Sarang",
             "",
-            "Keeping up with the week's biggest developments takes more than scrolling headlines. Here are the Top 10 News Highlights curated by the Bits & Bytes wing of SOLE (Society Of Literary Enthusiasts), IGIT Sarang, complete with primary sources:",
+            "Don't have an hour to scroll the news? Our Bits & Bytes team at SOLE (Society Of Literary Enthusiasts), IGIT Sarang, distilled the week's 10 biggest developments into a 60-second Weekly News Highlights recap with verified primary sources:",
             "",
         ]
         for idx, item in enumerate(selected_items[:10], 1):
-            li_lines.append(f"{idx}. {item.get('headline', '')} ({item.get('source', '')})")
+            li_lines.append(f"#{idx:02d}. {item.get('headline', '')} ({item.get('source', '')})")
         li_lines.extend([
             "",
-            "Swipe through the carousel for the full context on each story.",
+            "Swipe through the carousel to see all 10 highlights.",
         ])
         ig_raw = ghost_sanitize("\n".join(ig_lines))
         li_raw = ghost_sanitize("\n".join(li_lines))
@@ -132,20 +132,18 @@ def build_captions(content_type: str, selected_items: List[Dict[str, Any]], week
         ]
     elif content_type == "facts":
         item = selected_items[0]
-        hook = item.get("hook") or f"Most people never notice this about {item.get('category', 'the world').lower()}."
         ig_lines = [
-            hook,
+            f"Wait... is this actually real? ({item.get('category', 'Fact Drop')})",
             "",
-            f"{item.get('title', '')}: {item.get('fact', '')}",
+            f"Today's mystery: {item.get('title', '')}.",
+            "Most people only know half the story, but the plot twist on Slide 3 changes everything.",
             "",
-            f"{item.get('context', '')}",
+            f"Verified Source: {item.get('source', 'Archival Research')}",
             "",
-            f"Source: {item.get('source', 'Verified Archival Research')}",
-            "",
-            "Did you already know this one, or is it new to you? Tag a friend who loves random trivia.",
+            "Swipe to the last slide and comment A, B, or C: did you know this before today?",
         ]
         li_lines = [
-            f"Bits & Bytes Fact of the Week ({week_label}) | SOLE, IGIT Sarang",
+            f"Bits -N- Bytes Tuesday Fact Drop ({week_label}) | SOLE, IGIT Sarang",
             "",
             f"{item.get('title', '')}",
             f"{item.get('fact', '')}",
@@ -167,14 +165,13 @@ def build_captions(content_type: str, selected_items: List[Dict[str, Any]], week
         example = item.get("example", "")
         syns = ", ".join(item.get("synonyms", [])[:4])
         ig_lines = [
-            f"Word of the Week: {word} ({pos})",
+            f"Ever experienced this exact feeling, but didn't know there was a single word for it?",
             "",
-            f"Meaning: {defn}",
-            f"Synonyms: {syns}" if syns else "",
+            f"\"{defn}\"",
             "",
-            f"How to use it: \"{example}\"",
+            f"Can you guess the {len(word)}-letter {pos} (starts with '{word[0].upper() if word else ''}') before swiping to Slide 3?",
             "",
-            "Try using this word in a sentence in the comments below. Best sentence gets pinned.",
+            "Swipe through to unlock the word, then drop a short sentence using it in the comments. Best sentence gets pinned by @sole_igit.",
         ]
         li_lines = [
             f"Bits & Bytes Vocabulary Spotlight ({week_label}) | SOLE, IGIT Sarang",

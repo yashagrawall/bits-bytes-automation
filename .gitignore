@@ -9,3 +9,4 @@ venv/
 
 # Ephemeral rendered output packages (keep data/published_history.* tracked)
 output/
+peer_review_samples/
