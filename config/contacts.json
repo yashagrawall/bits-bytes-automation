@@ -33,7 +33,7 @@
           "batch": "43rd",
           "branch": "CHEM",
           "phone": "9178904102",
-          "email": ""
+          "email": "adityamistri02@gmail.com"
         }
       ],
       "design_leads": [
@@ -43,6 +43,22 @@
           "branch": "",
           "phone": "9556110595",
           "email": "piyushbarla03@gmail.com"
+        },
+        {
+          "name": "Tejdeep Sahu",
+          "batch": "",
+          "branch": "",
+          "phone": "",
+          "email": "sahutejdeep2006@gmail.com"
+        }
+      ],
+      "bits_bytes_primary": [
+        {
+          "name": "Yash Agrawall",
+          "batch": "43rd",
+          "branch": "CSE",
+          "phone": "7205117574",
+          "email": "yashagrawall333@gmail.com"
         }
       ]
     },
@@ -64,13 +80,6 @@
         }
       ],
       "prefinal_year_bits_bytes_reps": [
-        {
-          "name": "Yash Agrawall",
-          "batch": "43rd",
-          "branch": "CSE",
-          "phone": "7205117574",
-          "email": "yashagrawall333@gmail.com"
-        },
         {
           "name": "Phani Bhusan Rout",
           "batch": "43rd",
