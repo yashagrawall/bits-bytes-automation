@@ -23,6 +23,8 @@ Zero Paid Subscriptions Required ($0/month):
 
 import argparse
 import email.encoders
+import email.utils
+import html as html_lib
 import json
 import mimetypes
 import os
@@ -364,11 +366,16 @@ def collect_live_vocab() -> List[Dict[str, Any]]:
     return candidates
 
 
-def send_email_smtp(manifest: Dict[str, Any]) -> Dict[str, Any]:
+def send_email_smtp(
+    manifest: Dict[str, Any],
+    to_override: Optional[str] = None,
+    custom_attachments: Optional[List[Tuple[str, Path]]] = None,
+    plain_text_body: Optional[str] = None,
+) -> Dict[str, Any]:
     """
-    Sends the multipart HTML email with inline IGIT Sarang logo, attached 1080x1350 PNG slides,
-    and attached LinkedIn Carousel PDF directly via Gmail SMTP (`smtp.gmail.com:587`) using
-    a free Gmail App Password.
+    Sends an RFC-5322 compliant, inbox-friendly multipart email (`multipart/mixed` ->
+    `multipart/alternative` [text/plain + multipart/related [text/html + inline HD logos]])
+    with proper `Date`, `Message-ID`, and `Reply-To` headers to avoid spam folders.
     """
     gmail_user = os.environ.get("GMAIL_USER", "").strip()
     gmail_app_password = os.environ.get("GMAIL_APP_PASSWORD", "").replace(" ", "").strip()
@@ -381,37 +388,60 @@ def send_email_smtp(manifest: Dict[str, Any]) -> Dict[str, Any]:
             "reason": "GMAIL_USER or GMAIL_APP_PASSWORD not set in .env (email saved locally to email_body.html)",
         }
 
+    to_list = [e.strip() for e in to_override.split(",") if e.strip()] if to_override else list(manifest.get("to_emails", []))
+    cc_list = [] if to_override else list(manifest.get("cc_emails", []))
+
     msg = MIMEMultipart("mixed")
-    msg["From"] = f"Yash Agrawall (Bits & Bytes SOLE) <{gmail_user}>"
-    msg["To"] = ", ".join(manifest.get("to_emails", []))
-    msg["Cc"] = ", ".join(manifest.get("cc_emails", []))
+    msg["From"] = f"Yash Agrawall <{gmail_user}>"
+    msg["Reply-To"] = gmail_user
+    msg["To"] = ", ".join(to_list)
+    if cc_list:
+        msg["Cc"] = ", ".join(cc_list)
     msg["Subject"] = manifest.get("subject", "Bits & Bytes Social Media Post")
+    msg["Date"] = email.utils.formatdate(localtime=True)
+    msg["Message-ID"] = email.utils.make_msgid(domain="gmail.com")
 
     html_content = Path(manifest["email_html_path"]).read_text(encoding="utf-8")
+    if not plain_text_body:
+        md_path = manifest.get("markdown_brief_path")
+        if md_path and Path(md_path).exists():
+            plain_text_body = Path(md_path).read_text(encoding="utf-8")
+        else:
+            plain_text_body = strip_html_tags(html_content)
+
+    # Proper multipart/alternative (text/plain + multipart/related[text/html + inline logos])
+    alt = MIMEMultipart("alternative")
+    alt.attach(MIMEText(plain_text_body, "plain", "utf-8"))
+
     related = MIMEMultipart("related")
     related.attach(MIMEText(html_content, "html", "utf-8"))
 
-    # Embed IGIT Sarang Logo inline (`cid:igit_logo`) for the email signature
-    igit_logo_path = BASE_DIR / "IGIT Sarang Logo.webp"
-    if igit_logo_path.exists():
-        logo_part = MIMEBase("image", "webp")
-        logo_part.set_payload(igit_logo_path.read_bytes())
-        email.encoders.encode_base64(logo_part)
-        logo_part.add_header("Content-ID", "<igit_logo>")
-        logo_part.add_header("Content-Disposition", "inline", filename="IGIT_Sarang_Logo.webp")
-        related.attach(logo_part)
+    for cid, rel_path, fname in [
+        ("igit_logo", "assets/igit_logo_hd.png", "IGIT_Sarang_Logo.png"),
+        ("sole_logo", "assets/sole_logo_hd.png", "SOLE_Logo.png"),
+    ]:
+        logo_p = BASE_DIR / rel_path
+        if logo_p.exists():
+            logo_part = MIMEBase("image", "png")
+            logo_part.set_payload(logo_p.read_bytes())
+            email.encoders.encode_base64(logo_part)
+            logo_part.add_header("Content-ID", f"<{cid}>")
+            logo_part.add_header("Content-Disposition", "inline", filename=fname)
+            related.attach(logo_part)
 
-    msg.attach(related)
-
-    # Attach all rendered 1080x1350 PNG slides and the Carousel PDF directly to the email
-    attachments = list(manifest.get("design_assets", {}).get("png_paths", []))
-    pdf_path = manifest.get("design_assets", {}).get("linkedin_pdf_path")
-    if pdf_path and Path(pdf_path).exists():
-        attachments.append(pdf_path)
+    alt.attach(related)
+    msg.attach(alt)
 
     attached_files = []
-    for file_path in attachments:
-        p = Path(file_path)
+    if custom_attachments is not None:
+        attach_pairs = custom_attachments
+    else:
+        attach_pairs = [(Path(p).name, Path(p)) for p in manifest.get("design_assets", {}).get("png_paths", [])]
+        pdf_path = manifest.get("design_assets", {}).get("carousel_pdf_path") or manifest.get("design_assets", {}).get("linkedin_pdf_path")
+        if pdf_path and Path(pdf_path).exists():
+            attach_pairs.append((Path(pdf_path).name, Path(pdf_path)))
+
+    for fname, p in attach_pairs:
         if not p.exists():
             continue
         ctype, _ = mimetypes.guess_type(str(p))
@@ -419,19 +449,33 @@ def send_email_smtp(manifest: Dict[str, Any]) -> Dict[str, Any]:
         part = MIMEBase(maintype, subtype)
         part.set_payload(p.read_bytes())
         email.encoders.encode_base64(part)
-        part.add_header("Content-Disposition", "attachment", filename=p.name)
+        part.add_header("Content-Disposition", "attachment", filename=fname)
         msg.attach(part)
-        attached_files.append(p.name)
+        attached_files.append(fname)
 
-    all_recipients = list(manifest.get("to_emails", [])) + list(manifest.get("cc_emails", []))
-    with smtplib.SMTP(smtp_host, smtp_port, timeout=30) as server:
-        server.ehlo()
-        server.starttls()
-        server.login(gmail_user, gmail_app_password)
-        server.sendmail(gmail_user, all_recipients, msg.as_string())
+    all_recipients = to_list + cc_list
+    last_err: Optional[Exception] = None
+    for attempt in range(1, 4):
+        try:
+            with smtplib.SMTP(smtp_host, smtp_port, timeout=180) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                server.login(gmail_user, gmail_app_password)
+                server.sendmail(gmail_user, all_recipients, msg.as_string())
+            last_err = None
+            break
+        except Exception as exc:
+            last_err = exc
+            if attempt < 3:
+                time.sleep(3 * attempt)
+    if last_err is not None:
+        raise last_err
 
     return {
         "sent": True,
+        "to": to_list,
+        "cc": cc_list,
         "recipients_count": len(all_recipients),
         "attached_files": attached_files,
     }
@@ -595,6 +639,7 @@ def run_autonomous_job(
     publish_social: bool = False,
     commit_ledger: bool = True,
     date_code: Optional[str] = None,
+    to_override: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Executes the full standalone pipeline for `news`, `facts`, or `vocab`:
@@ -696,7 +741,7 @@ def run_autonomous_job(
     }
 
     if send_mail:
-        manifest["email_delivery"] = send_email_smtp(manifest)
+        manifest["email_delivery"] = send_email_smtp(manifest, to_override=to_override)
     if publish_social:
         manifest["instagram_publish"] = publish_to_instagram_graph_api(manifest)
         manifest["linkedin_publish"] = publish_to_linkedin_api(manifest)
@@ -771,18 +816,187 @@ def daemon_loop(port: int = 8765) -> None:
         time.sleep(900)
 
 
+def run_combined_sample_email(
+    send_mail: bool = True,
+    commit_ledger: bool = True,
+    to_override: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Generates ONE single inbox-friendly email containing fresh, non-repeated samples
+    of all three post types (Weekly News Highlights, Random Fact, and Random Vocabulary)
+    with Instagram (@sole_igit) captions only (no LinkedIn, no /GHOST mention),
+    the HD SOLE & IGIT Sarang logos in the signature, and the 3 carousel PDFs attached.
+    """
+    load_env_file()
+    now_ist = datetime.now(IST)
+    date_code = format_date_code(now_ist)
+    contacts = load_contacts()
+    sender = contacts.get("sender", {})
+    to_emails, cc_emails = resolve_recipients(contacts)
+
+    news_pkg = run_autonomous_job("news", send_mail=False, publish_social=False, commit_ledger=commit_ledger, date_code=date_code)
+    fact_pkg = run_autonomous_job("facts", send_mail=False, publish_social=False, commit_ledger=commit_ledger, date_code=date_code)
+    vocab_pkg = run_autonomous_job("vocab", send_mail=False, publish_social=False, commit_ledger=commit_ledger, date_code=date_code)
+
+    # Build News HTML Table
+    news_rows = []
+    for idx, item in enumerate(news_pkg["selected_items"], 1):
+        bg = "#ffffff" if idx % 2 == 1 else "#f8fafc"
+        news_rows.append(
+            f'<tr style="background:{bg};">'
+            f'<td style="padding:10px;border:1px solid #cbd5e1;text-align:center;font-weight:700;color:#0887A8;">#{idx:02d}</td>'
+            f'<td style="padding:10px;border:1px solid #cbd5e1;font-weight:600;color:#0f172a;">{html_lib.escape(item.get("headline", ""))}</td>'
+            f'<td style="padding:10px;border:1px solid #cbd5e1;color:#334155;font-size:13.5px;">{html_lib.escape(item.get("summary", ""))}</td>'
+            f'<td style="padding:10px;border:1px solid #cbd5e1;text-align:center;"><a href="{html_lib.escape(item.get("url", "#"))}" style="color:#0887A8;">{html_lib.escape(item.get("source", "Link"))}</a></td>'
+            f'</tr>'
+        )
+    news_table = (
+        '<table style="width:100%;border-collapse:collapse;font-size:13.5px;margin:10px 0 16px 0;">'
+        '<thead><tr style="background:#0f172a;color:#ffffff;">'
+        '<th style="padding:10px;border:1px solid #0f172a;width:48px;">#</th>'
+        '<th style="padding:10px;border:1px solid #0f172a;text-align:left;width:30%;">Headline</th>'
+        '<th style="padding:10px;border:1px solid #0f172a;text-align:left;">Summary</th>'
+        '<th style="padding:10px;border:1px solid #0f172a;width:110px;">Source</th>'
+        f'</tr></thead><tbody>{"".join(news_rows)}</tbody></table>'
+    )
+
+    fact_item = fact_pkg["selected_items"][0]
+    vocab_item = vocab_pkg["selected_items"][0]
+
+    news_cap = html_lib.escape(news_pkg["captions"]["instagram_caption"]).replace("\n", "<br>")
+    fact_cap = html_lib.escape(fact_pkg["captions"]["instagram_caption"]).replace("\n", "<br>")
+    vocab_cap = html_lib.escape(vocab_pkg["captions"]["instagram_caption"]).replace("\n", "<br>")
+
+    combined_html = f"""<!DOCTYPE html>
+<html>
+<body style="font-family:Arial,Helvetica,sans-serif;color:#1e293b;line-height:1.6;max-width:820px;margin:0 auto;padding:12px;">
+  <p style="margin-top:0;">Hi Social Media &amp; Design Team Leads,</p>
+  <p>Here is a combined sample containing fresh, non-repeated editions of all three <b>Bits &amp; Bytes</b> post types (<b>Weekly News Highlights</b>, <b>Random Fact</b>, and <b>Random Vocabulary / Thesaurus</b>) along with their ready-to-post 1080&times;1350 carousel designs attached as PDFs and Instagram captions for <b>@sole_igit</b>.</p>
+  <p>Feel free to use the attached designs directly or create a new design from this content.</p>
+
+  <hr style="border:none;border-top:1px solid #cbd5e1;margin:20px 0;">
+  <h3 style="color:#0f172a;margin:0 0 8px 0;">1. Weekly News Highlights (Attached: Weekly_News_Highlights.pdf)</h3>
+  {news_table}
+  <p style="margin:8px 0 4px 0;"><b>Instagram Caption (@sole_igit):</b></p>
+  <div style="background:#f8fafc;border-left:3px solid #0887A8;padding:12px 14px;font-size:13.5px;margin-bottom:20px;">{news_cap}</div>
+
+  <hr style="border:none;border-top:1px solid #cbd5e1;margin:20px 0;">
+  <h3 style="color:#0f172a;margin:0 0 8px 0;">2. Random Fact of the Week (Attached: Random_Fact.pdf)</h3>
+  <p style="margin:6px 0;"><b>{html_lib.escape(fact_item.get("title", ""))}</b></p>
+  <p style="margin:6px 0;">{html_lib.escape(fact_item.get("fact", ""))}</p>
+  <p style="margin:6px 0;color:#475569;">{html_lib.escape(fact_item.get("context", ""))}</p>
+  <p style="margin:8px 0 4px 0;"><b>Instagram Caption (@sole_igit):</b></p>
+  <div style="background:#f8fafc;border-left:3px solid #0887A8;padding:12px 14px;font-size:13.5px;margin-bottom:20px;">{fact_cap}</div>
+
+  <hr style="border:none;border-top:1px solid #cbd5e1;margin:20px 0;">
+  <h3 style="color:#0f172a;margin:0 0 8px 0;">3. Random Vocabulary / Thesaurus (Attached: Random_Vocabulary.pdf)</h3>
+  <p style="margin:6px 0;"><b>{html_lib.escape(vocab_item.get("word", ""))}</b> ({html_lib.escape(vocab_item.get("pronunciation", ""))} &bull; {html_lib.escape(vocab_item.get("part_of_speech", ""))})</p>
+  <p style="margin:6px 0;"><b>Definition:</b> {html_lib.escape(vocab_item.get("definition", ""))}</p>
+  <p style="margin:6px 0;"><b>Example:</b> &ldquo;{html_lib.escape(vocab_item.get("example", ""))}&rdquo;</p>
+  <p style="margin:6px 0;"><b>Synonyms:</b> {html_lib.escape(", ".join(vocab_item.get("synonyms", [])))} &nbsp;|&nbsp; <b>Antonyms:</b> {html_lib.escape(", ".join(vocab_item.get("antonyms", [])))}</p>
+  <p style="margin:8px 0 4px 0;"><b>Instagram Caption (@sole_igit):</b></p>
+  <div style="background:#f8fafc;border-left:3px solid #0887A8;padding:12px 14px;font-size:13.5px;margin-bottom:24px;">{vocab_cap}</div>
+
+  <hr style="border:none;border-top:1px solid #cbd5e1;margin:24px 0 16px 0;">
+  <div style="font-size:13.5px;color:#334155;line-height:1.55;">
+    <b>{html_lib.escape(sender.get("name", "Yash Agrawall"))}</b><br>
+    {html_lib.escape(sender.get("batch_branch", "43rd CSE"))}<br>
+    {html_lib.escape(sender.get("role", "Bits & Bytes SOLE"))}<br>
+    {html_lib.escape(sender.get("college", "IGIT Sarang"))}<br>
+    Ph. No. {html_lib.escape(sender.get("phone", "+91 XXXXX XXXXX"))}<br>
+    Instagram Handle : <a href="{html_lib.escape(sender.get("instagram_url", "https://www.instagram.com/yashagrawall/"))}" style="color:#0887A8;">{html_lib.escape(sender.get("instagram_handle", "@yashagrawall"))}</a><br>
+    LinkedIn Handle : <a href="{html_lib.escape(sender.get("linkedin_url", "https://www.linkedin.com/in/yash-agrawall"))}" style="color:#0887A8;">{html_lib.escape(sender.get("linkedin_handle", "yash-agrawall"))}</a><br>
+    <div style="margin-top:12px;">
+      <img src="cid:igit_logo" alt="IGIT Sarang Logo" style="height:64px;width:auto;vertical-align:middle;margin-right:10px;">
+      <img src="cid:sole_logo" alt="SOLE Logo" style="height:60px;width:auto;vertical-align:middle;">
+    </div>
+  </div>
+</body>
+</html>"""
+
+    plain_lines = [
+        "Hi Social Media & Design Team Leads,",
+        "",
+        f"Here is a combined sample containing fresh editions of all three Bits & Bytes post types ({date_code}):",
+        "",
+        "1. WEEKLY NEWS HIGHLIGHTS (see attached Weekly_News_Highlights.pdf)",
+        news_pkg["captions"]["instagram_caption"],
+        "",
+        "2. RANDOM FACT OF THE WEEK (see attached Random_Fact.pdf)",
+        f"{fact_item.get('title', '')}: {fact_item.get('fact', '')}",
+        fact_pkg["captions"]["instagram_caption"],
+        "",
+        "3. RANDOM VOCABULARY / THESAURUS (see attached Random_Vocabulary.pdf)",
+        f"{vocab_item.get('word', '')} ({vocab_item.get('part_of_speech', '')}): {vocab_item.get('definition', '')}",
+        vocab_pkg["captions"]["instagram_caption"],
+        "",
+        "--",
+        "Yash Agrawall | 43rd CSE | Bits & Bytes SOLE | IGIT Sarang | +91 XXXXX XXXXX",
+    ]
+
+    out_dir = OUTPUT_ROOT / f"{date_code}_combined_sample"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    html_path = out_dir / "email_body.html"
+    html_path.write_text(combined_html, encoding="utf-8")
+
+    subject = f"[{date_code}] : Bits & Bytes Social Media Post : Complete Sample (News, Fact & Vocabulary)"
+    manifest = {
+        "package_id": f"{date_code}_combined_sample",
+        "subject": subject,
+        "to_emails": to_emails,
+        "cc_emails": cc_emails,
+        "email_html_path": str(html_path),
+        "news_word_fact_summary": {
+            "news_top1": news_pkg["selected_items"][0].get("headline"),
+            "fact_title": fact_item.get("title"),
+            "vocab_word": vocab_item.get("word"),
+        },
+    }
+
+    custom_attachments = [
+        ("Weekly_News_Highlights.pdf", Path(news_pkg["design_assets"]["carousel_pdf_path"])),
+        ("Random_Fact.pdf", Path(fact_pkg["design_assets"]["carousel_pdf_path"])),
+        ("Random_Vocabulary.pdf", Path(vocab_pkg["design_assets"]["carousel_pdf_path"])),
+    ]
+
+    if send_mail:
+        manifest["email_delivery"] = send_email_smtp(
+            manifest,
+            to_override=to_override,
+            custom_attachments=custom_attachments,
+            plain_text_body="\n".join(plain_lines),
+        )
+    return manifest
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Standalone Zero-Subscription Bits & Bytes Automation Engine")
-    parser.add_argument("--type", choices=["news", "facts", "vocab", "auto"], default="auto")
-    parser.add_argument("--send-mail", action="store_true", help="Send HTML email with PNG/PDF attachments via Gmail SMTP")
+    parser.add_argument("--type", choices=["news", "facts", "vocab", "auto", "combined-sample"], default="auto")
+    parser.add_argument("--send-mail", action="store_true", help="Send HTML email with slide attachments via Gmail SMTP")
     parser.add_argument("--publish-social", action="store_true", help="Publish directly to Instagram Graph API & LinkedIn API")
     parser.add_argument("--no-commit", action="store_true", help="Dry run without committing to published_history.json")
+    parser.add_argument("--to-override", default=None, help="Send email ONLY to this comma-separated address list (skips team To/Cc)")
     parser.add_argument("--daemon", action="store_true", help="Run 24/7 inside Docker with catch-up scheduler + HTTP API")
     parser.add_argument("--port", type=int, default=8765)
     args = parser.parse_args()
 
     if args.daemon:
         daemon_loop(port=args.port)
+        return
+
+    if args.type == "combined-sample":
+        res = run_combined_sample_email(
+            send_mail=args.send_mail,
+            commit_ledger=not args.no_commit,
+            to_override=args.to_override,
+        )
+        print(json.dumps({
+            "status": "ok",
+            "package_id": res["package_id"],
+            "subject": res["subject"],
+            "fresh_items": res["news_word_fact_summary"],
+            "email_delivery": res.get("email_delivery"),
+        }, indent=2))
         return
 
     ctype = args.type
@@ -800,6 +1014,7 @@ def main() -> None:
         send_mail=args.send_mail,
         publish_social=args.publish_social,
         commit_ledger=not args.no_commit,
+        to_override=args.to_override,
     )
     print(json.dumps({
         "status": "ok",
