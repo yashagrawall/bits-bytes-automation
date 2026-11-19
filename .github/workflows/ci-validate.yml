@@ -1,0 +1,51 @@
+name: CI — Validate Scripts, Contacts & Assets
+
+on:
+  push:
+    branches: ["main"]
+    paths-ignore:
+      - "data/published_history.json"
+      - "data/published_history.txt"
+      - "**.md"
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Pillow
+        run: pip install Pillow
+
+      - name: Syntax-check Python scripts
+        run: python3 -m py_compile scripts/*.py
+
+      - name: Validate config/contacts.json & recipient resolution
+        run: |
+          python3 -c "
+          import sys
+          sys.path.insert(0, 'scripts')
+          from package_and_deliver import load_contacts, resolve_recipients
+          to_list, cc_list = resolve_recipients(load_contacts())
+          assert len(to_list) > 0, 'TO list cannot be empty'
+          overlap = set(to_list) & set(cc_list)
+          assert not overlap, f'Overlap between TO and CC: {overlap}'
+          print(f'Validated contacts: {len(to_list)} TO, {len(cc_list)} CC')
+          "
+
+      - name: Verify pre-baked HD static assets & history ledger exist
+        run: |
+          test -f assets/sole_logo_hd.png
+          test -f assets/igit_logo_hd.png
+          test -f assets/base_cover_frame.png
+          test -f assets/base_inner_frame.png
+          python3 -c "import json; json.load(open('data/published_history.json'))"
+          echo "All static assets and history ledger verified."

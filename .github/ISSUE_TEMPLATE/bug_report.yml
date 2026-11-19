@@ -1,0 +1,30 @@
+name: Bug Report
+description: Report an issue with carousel rendering, email delivery, or scheduled runs
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the issue (e.g., overlapping text, failed GitHub Action, missing email, repeated topic).
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component
+      options:
+        - Weekly News Highlights
+        - Random Fact of the Week
+        - Random Vocabulary / Thesaurus
+        - Email Delivery / Recipients
+        - GitHub Actions Cron
+        - Local Docker / n8n
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or Screenshots
+      description: Paste any error traceback, GitHub Actions run URL, or screenshot.

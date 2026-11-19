@@ -1,0 +1,23 @@
+name: Roster / Design / Content Request
+description: Request a change to email recipients, carousel design, or posting schedule
+title: "[Request]: "
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: request_type
+    attributes:
+      label: Request Type
+      options:
+        - Add/Remove Email Recipient (To/Cc)
+        - Design / Template Update
+        - Schedule Change
+        - New Fact / Vocab Pool Entries
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Provide exact emails/roles, design notes, or schedule changes needed.
+    validations:
+      required: true
