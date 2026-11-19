@@ -163,55 +163,45 @@ def build_html_email(
         links_items.append(f'<li><b>Canva Editable Design Template:</b> <a href="{html.escape(canva_edit_url)}" style="color:#0887A8;font-weight:600;">Edit in Canva &#8599;</a></li>')
     if not links_items:
         links_items.append(
-            f'<li><b>Attached Design Package ({slide_count} Ready-to-Post 1080&times;1350 PNG Slides + Carousel PDF):</b> '
-            f'All {slide_count} rendered PNG slides (<code>slide_01.png</code> &ndash; <code>slide_{slide_count:02d}.png</code>) and '
-            f'<code>linkedin_carousel.pdf</code> are attached directly to this email.</li>'
-            f'<li><b>Design &amp; Posting Flexibility:</b> The Design and Social Media teams may <b>accept and post these attached designs directly</b>, '
-            f'or use the curated content below to <b>create a custom design</b> before posting on <code>@sole_igit</code>.</li>'
+            f'<li><b>Attached Design Package ({slide_count} Ready-to-Post 1080&times;1350 Slides + Carousel PDF):</b> '
+            f'All {slide_count} slides (<code>slide_01.jpg</code> &ndash; <code>slide_{slide_count:02d}.jpg</code>) and '
+            f'<code>carousel_slides.pdf</code> are attached to this email.</li>'
+            f'<li><b>Design &amp; Posting Note:</b> Feel free to post the attached design directly on <code>@sole_igit</code>, '
+            f'or use the content below to create a new design if preferred.</li>'
         )
 
     ig_caption_html = html.escape(captions.get("instagram_caption", "")).replace("\n", "<br>")
-    li_caption_html = html.escape(captions.get("linkedin_caption", "")).replace("\n", "<br>")
 
     email_html = f"""<!DOCTYPE html>
 <html>
-<body style="font-family:Arial,Helvetica,sans-serif;color:#1e293b;line-height:1.6;max-width:840px;margin:0 auto;padding:16px;">
-  <div style="background:#070c14;color:#ffffff;padding:20px 24px;border-radius:12px 12px 0 0;border-bottom:4px solid #22d3ee;">
-    <div style="font-size:12px;color:#22d3ee;font-weight:700;letter-spacing:1px;text-transform:uppercase;">SOLE (Society Of Literary Enthusiasts) &bull; IGIT Sarang</div>
-    <h2 style="margin:6px 0 0 0;font-size:22px;color:#ffffff;">[{html.escape(date_code)}] : Bits &amp; Bytes Social Media Post : {html.escape(content_title)}</h2>
+<body style="font-family:Arial,Helvetica,sans-serif;color:#1e293b;line-height:1.6;max-width:820px;margin:0 auto;padding:12px;">
+  <p style="margin-top:0;">Hi Social Media &amp; Design Team Leads,</p>
+  <p>Please find below the curated <b>Bits &amp; Bytes</b> content, caption for <b>@sole_igit</b>, and attached 1080&times;1350 design slides for <b>{html.escape(content_title)}</b> ({html.escape(date_code)}). You are free to use the attached design directly or create a new design from this content.</p>
+
+  {content_block}
+
+  <h3 style="color:#0f172a;margin:22px 0 8px 0;font-size:16px;">2. Attached Design Files</h3>
+  <ul style="padding-left:22px;margin-bottom:22px;">
+    {"".join(links_items)}
+  </ul>
+
+  <h3 style="color:#0f172a;margin:22px 0 8px 0;font-size:16px;">3. Instagram Caption &amp; Hashtags (@sole_igit)</h3>
+  <div style="background:#f8fafc;border-left:3px solid #0887A8;padding:14px 16px;font-size:14px;line-height:1.55;margin-bottom:26px;">
+    {ig_caption_html}
   </div>
 
-  <div style="border:1px solid #e2e8f0;border-top:none;padding:24px;border-radius:0 0 12px 12px;background:#ffffff;">
-    <p style="margin-top:0;">Hi Social Media &amp; Design Team Leads,</p>
-    <p>Please find below the curated, deduplicated <b>Bits &amp; Bytes</b> content, ready-to-copy <code>/GHOST</code> caption, and <b>attached 1080&times;1350 design slides</b> for <b>{html.escape(content_title)}</b>. Feel free to post the attached design directly or use the content to create a new design if preferred.</p>
-
-    {content_block}
-
-    <h3 style="color:#0f172a;margin:24px 0 10px 0;font-size:17px;">2. Attached Design &amp; Carousel Files</h3>
-    <ul style="background:#f0f9ff;border:1px solid #bae6fd;padding:14px 20px 14px 36px;border-radius:8px;margin-bottom:24px;">
-      {"".join(links_items)}
-    </ul>
-
-    <h3 style="color:#0f172a;margin:24px 0 10px 0;font-size:17px;">3. Ready-to-Post Caption &amp; Hashtags (@sole_igit) &mdash; /GHOST Verified</h3>
-    <div style="background:#f8fafc;border:1px solid #cbd5e1;padding:16px;border-radius:8px;font-family:monospace;font-size:13.5px;line-height:1.55;margin-bottom:24px;">
-      {ig_caption_html}
-    </div>
-
-    <h3 style="color:#0f172a;margin:24px 0 10px 0;font-size:17px;">4. LinkedIn Post Copy &mdash; /GHOST Verified</h3>
-    <div style="background:#f8fafc;border:1px solid #cbd5e1;padding:16px;border-radius:8px;font-family:monospace;font-size:13.5px;line-height:1.55;margin-bottom:28px;">
-      {li_caption_html}
-    </div>
-
-    <hr style="border:none;border-top:1px solid #cbd5e1;margin:28px 0 18px 0;">
-    <div style="font-size:13.5px;color:#334155;line-height:1.55;">
-      <b>{html.escape(sender.get("name", "Yash Agrawall"))}</b><br>
-      {html.escape(sender.get("batch_branch", "43rd CSE"))}<br>
-      {html.escape(sender.get("role", "Bits & Bytes SOLE"))}<br>
-      {html.escape(sender.get("college", "IGIT Sarang"))}<br>
-      Ph. No. {html.escape(sender.get("phone", "+91 72051 17574"))}<br>
-      Instagram Handle : <a href="{html.escape(sender.get("instagram_url", "https://www.instagram.com/yashagrawall/"))}" style="color:#0887A8;">{html.escape(sender.get("instagram_handle", "@yashagrawall"))}</a><br>
-      LinkedIn Handle : <a href="{html.escape(sender.get("linkedin_url", "https://www.linkedin.com/in/yash-agrawall"))}" style="color:#0887A8;">{html.escape(sender.get("linkedin_handle", "yash-agrawall"))}</a><br>
-      <img src="cid:igit_logo" alt="IGIT Sarang Logo" style="width:72px;height:auto;margin-top:10px;display:block;">
+  <hr style="border:none;border-top:1px solid #cbd5e1;margin:24px 0 16px 0;">
+  <div style="font-size:13.5px;color:#334155;line-height:1.55;">
+    <b>{html.escape(sender.get("name", "Yash Agrawall"))}</b><br>
+    {html.escape(sender.get("batch_branch", "43rd CSE"))}<br>
+    {html.escape(sender.get("role", "Bits & Bytes SOLE"))}<br>
+    {html.escape(sender.get("college", "IGIT Sarang"))}<br>
+    Ph. No. {html.escape(sender.get("phone", "+91 72051 17574"))}<br>
+    Instagram Handle : <a href="{html.escape(sender.get("instagram_url", "https://www.instagram.com/yashagrawall/"))}" style="color:#0887A8;">{html.escape(sender.get("instagram_handle", "@yashagrawall"))}</a><br>
+    LinkedIn Handle : <a href="{html.escape(sender.get("linkedin_url", "https://www.linkedin.com/in/yash-agrawall"))}" style="color:#0887A8;">{html.escape(sender.get("linkedin_handle", "yash-agrawall"))}</a><br>
+    <div style="margin-top:12px;">
+      <img src="cid:igit_logo" alt="IGIT Sarang Logo" style="height:64px;width:auto;vertical-align:middle;margin-right:10px;">
+      <img src="cid:sole_logo" alt="SOLE Logo" style="height:60px;width:auto;vertical-align:middle;">
     </div>
   </div>
 </body>
@@ -277,12 +267,6 @@ def build_markdown_brief(
         "",
         "```text",
         captions.get("instagram_caption", ""),
-        "```",
-        "",
-        "## LinkedIn Caption",
-        "",
-        "```text",
-        captions.get("linkedin_caption", ""),
         "```",
         "",
         "## Email Signature",

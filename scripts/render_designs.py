@@ -25,6 +25,13 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATE_PATH = BASE_DIR / "assets" / "bits_n_bytes_template.jpg"
+SOLE_LOGO_HD_PATH = BASE_DIR / "assets" / "sole_logo_hd.png"
+IGIT_LOGO_HD_PATH = BASE_DIR / "assets" / "igit_logo_hd.png"
+BASE_COVER_FRAME_PATH = BASE_DIR / "assets" / "base_cover_frame.png"
+BASE_INNER_FRAME_PATH = BASE_DIR / "assets" / "base_inner_frame.png"
+
+_FRAME_CACHE: Dict[str, Image.Image] = {}
+_FONT_CACHE: Dict[Tuple[str, int], ImageFont.FreeTypeFont] = {}
 
 FONT_DIR_MONTSERRAT = Path("/usr/share/fonts/julietaula-montserrat-fonts")
 FONT_DIR_CALADEA = Path("/usr/share/fonts/google-crosextra-caladea-fonts")
@@ -76,6 +83,9 @@ def format_human_week(week_label: str) -> str:
 
 
 def get_font(name: str, size: int) -> ImageFont.FreeTypeFont:
+    cache_key = (name, size)
+    if cache_key in _FONT_CACHE:
+        return _FONT_CACHE[cache_key]
     font_map = {
         "black": [FONT_DIR_MONTSERRAT / "Montserrat-Black.otf", "Montserrat-Black.ttf", "Montserrat-Bold.ttf", "LiberationSans-Bold.ttf"],
         "extrabold": [FONT_DIR_MONTSERRAT / "Montserrat-ExtraBold.otf", "Montserrat-ExtraBold.ttf", "Montserrat-Bold.ttf", "LiberationSans-Bold.ttf"],
@@ -91,11 +101,15 @@ def get_font(name: str, size: int) -> ImageFont.FreeTypeFont:
     candidates = font_map.get(name, font_map["regular"])
     for cand in candidates:
         if isinstance(cand, Path) and cand.exists():
-            return ImageFont.truetype(str(cand), size)
+            f = ImageFont.truetype(str(cand), size)
+            _FONT_CACHE[cache_key] = f
+            return f
         if isinstance(cand, str):
             matches = list(Path("/usr/share/fonts").rglob(cand))
             if matches:
-                return ImageFont.truetype(str(matches[0]), size)
+                f = ImageFont.truetype(str(matches[0]), size)
+                _FONT_CACHE[cache_key] = f
+                return f
     return ImageFont.load_default()
 
 
@@ -196,59 +210,27 @@ def shorten_sentence(text: str, max_words: int = 24) -> str:
     return " ".join(words[:max_words]).rstrip(".,;:") + "..."
 
 
-def load_raw_template() -> Image.Image:
-    if TEMPLATE_PATH.exists():
-        return Image.open(TEMPLATE_PATH).convert("RGBA").resize((WIDTH, HEIGHT), Image.Resampling.LANCZOS)
-    return Image.new("RGBA", (WIDTH, HEIGHT), COSMIC_TOP + (255,))
+def load_cached_frame(kind: str) -> Image.Image:
+    """
+    Loads pre-baked static 1080x1350 base frames (`base_cover_frame.png` / `base_inner_frame.png`)
+    into RAM once and returns a fast `.copy()` per slide — avoiding repeated resizing,
+    Gaussian blurs, and logo compositing on every run.
+    """
+    if kind not in _FRAME_CACHE:
+        path = BASE_COVER_FRAME_PATH if kind == "cover" else BASE_INNER_FRAME_PATH
+        if not path.exists():
+            from build_static_assets import build_base_frames
+            build_base_frames()
+        _FRAME_CACHE[kind] = Image.open(path).convert("RGBA")
+    return _FRAME_CACHE[kind].copy()
 
 
 def create_authentic_blank_frame(week_display: str, seed: int = 1, show_top_week_pill: bool = True) -> Image.Image:
     """
-    Preserves the EXACT outer frame and torn graph-paper corners from `assets/bits_n_bytes_template.jpg`
-    while completely clearing the center circle (leaving zero ghost rim) and placing a
-    horizontally centered Week Edition badge at `y = 148` (completely clear of the top header!).
+    Fast O(1) copy of the pre-baked `assets/base_inner_frame.png` (exact torn edges +
+    HD transparent SOLE & IGIT logos + @sole_igit footer) with the centered Week Edition badge.
     """
-    base = load_raw_template()
-
-    patch = Image.new("RGBA", (WIDTH, HEIGHT), (0, 0, 0, 0))
-    pdraw = ImageDraw.Draw(patch)
-    for y in range(138, 1240):
-        t = (y - 138) / (1240 - 138)
-        r = int(COSMIC_TOP[0] * (1 - t) + COSMIC_BOTTOM[0] * t)
-        g = int(COSMIC_TOP[1] * (1 - t) + COSMIC_BOTTOM[1] * t)
-        b = int(COSMIC_TOP[2] * (1 - t) + COSMIC_BOTTOM[2] * t)
-        pdraw.line([(20, y), (WIDTH - 20, y)], fill=(r, g, b, 255))
-
-    rng = random.Random(500 + seed)
-    for _ in range(75):
-        sx = rng.randint(70, WIDTH - 70)
-        sy = rng.randint(155, 1200)
-        sr = rng.choice([1, 1, 2])
-        alpha = rng.randint(90, 210)
-        pdraw.ellipse([sx - sr, sy - sr, sx + sr, sy + sr], fill=(220, 240, 255, alpha))
-
-    # Polygon mask that covers 100% of the central circle + "PRESENTS" while staying
-    # strictly inside the 3 torn graph-paper corners and below the top header (y >= 138)
-    mask = Image.new("L", (WIDTH, HEIGHT), 0)
-    mdraw = ImageDraw.Draw(mask)
-    mdraw.polygon(
-        [
-            (40, 145),
-            (850, 145),
-            (905, 235),
-            (1035, 340),
-            (1035, 1140),
-            (940, 1225),
-            (310, 1225),
-            (185, 1140),
-            (40, 940),
-        ],
-        fill=255,
-    )
-    mask = mask.filter(ImageFilter.GaussianBlur(radius=14))
-
-    frame = Image.composite(patch, base, mask)
-
+    frame = load_cached_frame("inner")
     if show_top_week_pill:
         draw = ImageDraw.Draw(frame)
         font = get_font("black", 16)
@@ -273,34 +255,10 @@ def render_cover_slide(
     sub_hook: str,
 ) -> Image.Image:
     """
-    Slide 1:
-    - Exact torn paper edges & header from `assets/bits_n_bytes_template.jpg`
-    - Authentic central "PRESENTS + BITS -N- BYTES" circle centered horizontally at `x = 540` (`y = 160..805`)
-    - 100% Horizontally Centered Graph-Paper Curiosity Hook Card (`x = 165..915`, `y = 845..1175`)
-      with the Week identifier badge (`WEEKLY NEWS HIGHLIGHTS  •  NOV 2026 • WEEK 3`).
+    Slide 1: Fast copy of pre-baked `assets/base_cover_frame.png` + Centered Graph-Paper
+    Curiosity Hook Card (`x = 165..915`, `y = 845..1175`).
     """
-    canvas = create_authentic_blank_frame(week_display=week_display, seed=1, show_top_week_pill=False)
-    raw_tpl = load_raw_template()
-
-    crop_box = (70, 190, 1010, 1170)
-    emblem_crop = raw_tpl.crop(crop_box)
-    cw, ch = emblem_crop.size
-
-    emblem_mask = Image.new("L", (cw, ch), 0)
-    em_draw = ImageDraw.Draw(emblem_mask)
-    em_draw.ellipse([18, 68, cw - 18, ch - 14], fill=255)
-    em_draw.ellipse([230, 4, cw - 230, 210], fill=255)
-    emblem_mask = emblem_mask.filter(ImageFilter.GaussianBlur(radius=10))
-
-    target_w = int(cw * 0.65)
-    target_h = int(ch * 0.65)
-    emblem_scaled = emblem_crop.resize((target_w, target_h), Image.Resampling.LANCZOS)
-    mask_scaled = emblem_mask.resize((target_w, target_h), Image.Resampling.LANCZOS)
-
-    paste_x = (WIDTH - target_w) // 2
-    paste_y = 160
-    canvas.paste(emblem_scaled, (paste_x, paste_y), mask_scaled)
-
+    canvas = load_cached_frame("cover")
     draw = ImageDraw.Draw(canvas)
 
     # 100% Centered Graph-Paper Curiosity Hook Card (x = 165..915, center = 540)
@@ -962,8 +920,8 @@ def render_package_designs(
 ) -> Dict[str, Any]:
     slides_dir = out_dir / "slides"
     slides_dir.mkdir(parents=True, exist_ok=True)
-    for old_png in slides_dir.glob("slide_*.png"):
-        old_png.unlink()
+    for old_img in list(slides_dir.glob("slide_*.png")) + list(slides_dir.glob("slide_*.jpg")):
+        old_img.unlink()
 
     week_display = format_human_week(week_label)
     rendered_images: List[Image.Image] = []
@@ -1045,16 +1003,18 @@ def render_package_designs(
     for idx, img in enumerate(rendered_images, 1):
         rgb = img.convert("RGB")
         rgb_images.append(rgb)
-        p = slides_dir / f"slide_{idx:02d}.png"
-        rgb.save(p, format="PNG", optimize=True)
+        # High-quality 4:4:4 JPEG (zero chroma subsampling blur, 4x faster Gmail SMTP & smaller storage)
+        p = slides_dir / f"slide_{idx:02d}.jpg"
+        rgb.save(p, format="JPEG", quality=92, subsampling=0, optimize=True)
         png_paths.append(str(p))
 
-    pdf_path = out_dir / "linkedin_carousel.pdf"
+    pdf_path = out_dir / "carousel_slides.pdf"
     if rgb_images:
         rgb_images[0].save(
             pdf_path,
             format="PDF",
-            resolution=150.0,
+            resolution=110.0,
+            quality=85,
             save_all=True,
             append_images=rgb_images[1:],
         )
@@ -1064,6 +1024,7 @@ def render_package_designs(
     return {
         "slide_count": len(png_paths),
         "png_paths": png_paths,
+        "carousel_pdf_path": str(pdf_path),
         "linkedin_pdf_path": str(pdf_path),
         "canva_csv_path": str(csv_path),
         "gslides_batch_path": str(gslides_path),
