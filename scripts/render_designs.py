@@ -86,13 +86,13 @@ def get_font(name: str, size: int) -> ImageFont.FreeTypeFont:
     if cache_key in _FONT_CACHE:
         return _FONT_CACHE[cache_key]
     font_map = {
-        "black": [FONT_DIR_MONTSERRAT / "Montserrat-Black.otf", "Montserrat-Black.ttf", "Montserrat-Bold.ttf", "LiberationSans-Bold.ttf"],
-        "extrabold": [FONT_DIR_MONTSERRAT / "Montserrat-ExtraBold.otf", "Montserrat-ExtraBold.ttf", "Montserrat-Bold.ttf", "LiberationSans-Bold.ttf"],
-        "bold": [FONT_DIR_MONTSERRAT / "Montserrat-Bold.otf", "Montserrat-Bold.ttf", "LiberationSans-Bold.ttf"],
-        "semibold": [FONT_DIR_MONTSERRAT / "Montserrat-SemiBold.otf", "Montserrat-SemiBold.ttf", "Montserrat-Bold.ttf", "LiberationSans-Bold.ttf"],
-        "medium": [FONT_DIR_MONTSERRAT / "Montserrat-Medium.otf", "Montserrat-Medium.ttf", "Montserrat-Regular.ttf", "LiberationSans-Regular.ttf"],
-        "regular": [FONT_DIR_MONTSERRAT / "Montserrat-Regular.otf", "Montserrat-Regular.ttf", "LiberationSans-Regular.ttf"],
-        "italic": [FONT_DIR_MONTSERRAT / "Montserrat-Italic.otf", "Montserrat-Italic.ttf", "LiberationSans-Italic.ttf"],
+        "black": [FONT_DIR_MONTSERRAT / "Montserrat-Black.otf", "Montserrat-Black.otf", "Montserrat-Black.ttf", "Montserrat-Bold.otf", "Montserrat-Bold.ttf", "LiberationSans-Bold.ttf"],
+        "extrabold": [FONT_DIR_MONTSERRAT / "Montserrat-ExtraBold.otf", "Montserrat-ExtraBold.otf", "Montserrat-ExtraBold.ttf", "Montserrat-Bold.otf", "Montserrat-Bold.ttf", "LiberationSans-Bold.ttf"],
+        "bold": [FONT_DIR_MONTSERRAT / "Montserrat-Bold.otf", "Montserrat-Bold.otf", "Montserrat-Bold.ttf", "LiberationSans-Bold.ttf"],
+        "semibold": [FONT_DIR_MONTSERRAT / "Montserrat-SemiBold.otf", "Montserrat-SemiBold.otf", "Montserrat-SemiBold.ttf", "Montserrat-Bold.otf", "Montserrat-Bold.ttf", "LiberationSans-Bold.ttf"],
+        "medium": [FONT_DIR_MONTSERRAT / "Montserrat-Medium.otf", "Montserrat-Medium.otf", "Montserrat-Medium.ttf", "Montserrat-Regular.otf", "Montserrat-Regular.ttf", "LiberationSans-Regular.ttf"],
+        "regular": [FONT_DIR_MONTSERRAT / "Montserrat-Regular.otf", "Montserrat-Regular.otf", "Montserrat-Regular.ttf", "LiberationSans-Regular.ttf"],
+        "italic": [FONT_DIR_MONTSERRAT / "Montserrat-Italic.otf", "Montserrat-Italic.otf", "Montserrat-Italic.ttf", "LiberationSans-Italic.ttf"],
         "serif_bold": [FONT_DIR_CALADEA / "Caladea-Bold.ttf", "Caladea-Bold.ttf", "LiberationSerif-Bold.ttf"],
         "serif_italic": [FONT_DIR_LIBERATION_SERIF / "LiberationSerif-Italic.ttf", "LiberationSerif-Italic.ttf", "Caladea-Italic.ttf"],
         "serif_regular": [FONT_DIR_LIBERATION_SERIF / "LiberationSerif-Regular.ttf", "LiberationSerif-Regular.ttf", "Caladea-Regular.ttf"],
@@ -563,9 +563,21 @@ def render_fact_carousel(item: Dict[str, Any], week_label: str) -> List[Image.Im
     context = item.get("context", "")
     cat = item.get("category", "FACT SPOTLIGHT").upper()
 
+    source = item.get("source", "Archival Research")
     sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", fact_body) if s.strip()]
-    setup_sent = sentences[0] if sentences else fact_body
-    twist_sent = " ".join(sentences[1:]) if len(sentences) > 1 else context
+    context_sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", context) if s.strip()]
+    if len(sentences) > 1:
+        setup_sent = sentences[0]
+        twist_sent = " ".join(sentences[1:])
+        why_text = context or f"Documented by {source}, showing why {cat.lower()} still surprises researchers today."
+    elif len(context_sentences) > 1:
+        setup_sent = fact_body
+        twist_sent = context_sentences[0]
+        why_text = " ".join(context_sentences[1:])
+    else:
+        setup_sent = fact_body
+        twist_sent = context or fact_body
+        why_text = f"Verified via {source}. A standout detail from {cat.lower()} that most textbooks leave out."
 
     s1 = render_cover_slide(
         edition_badge="FACT OF THE WEEK",
@@ -621,10 +633,10 @@ def render_fact_carousel(item: Dict[str, Any], week_label: str) -> List[Image.Im
     )
 
     draw_clean_purple_card(s3, (COL_X1, 664, COL_X2, 1086), border_color=MUSTARD_GOLD, seed=33)
-    d3.text((COL_X1 + COL_PAD, 700), "WHY THIS BLEW HISTORIANS' MINDS:", font=get_font("extrabold", 19), fill=MUSTARD_GOLD)
+    d3.text((COL_X1 + COL_PAD, 700), "WHY THIS MATTERS:", font=get_font("extrabold", 19), fill=MUSTARD_GOLD)
     draw_fitted_text_block(
         d3,
-        context or setup_sent,
+        why_text,
         box=(COL_X1 + COL_PAD, 742, COL_X2 - COL_PAD, 1060),
         font_name="medium",
         max_font_size=24,

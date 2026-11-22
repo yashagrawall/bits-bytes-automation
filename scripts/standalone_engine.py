@@ -639,8 +639,8 @@ def _score_news_item(category: str, title: str, desc: str) -> Tuple[float, float
     high_rel_terms = ["india", "odisha", "isro", "iit", "nit", "university", "student", "research", "science", "quantum", "space", "book", "literature", "prize", "open-source", "open source", "semiconductor", "climate", "energy"]
     high_pop_terms = ["ai", "space", "isro", "nobel", "booker", "breakthrough", "record", "moon", "mars", "google", "openai", "anthropic", "meta", "nasa", "climate", "health", "cyber"]
 
-    rel_hits = sum(1 for k in high_rel_terms if k in text)
-    pop_hits = sum(1 for k in high_pop_terms if k in text)
+    rel_hits = sum(1 for k in high_rel_terms if re.search(rf"\b{re.escape(k)}\b", text))
+    pop_hits = sum(1 for k in high_pop_terms if re.search(rf"\b{re.escape(k)}\b", text))
 
     rel += min(1.3, rel_hits * 0.35)
     pop += min(1.3, pop_hits * 0.35)
@@ -731,27 +731,40 @@ def collect_live_facts() -> List[Dict[str, Any]]:
     candidates: List[Dict[str, Any]] = [dict(f) for f in FACTS_ARCHIVE]
     headers = {"User-Agent": "SOLE-BitsAndBytes-IGITSarang/2.1 (+https://github.com/yashagrawall/bits-bytes-automation)"}
     skip_wiki_terms = ("footballer", "baseball", "basketball", "politician", "municipality", "village in", "album by", "disambiguation", "chemical compound used in")
-    try:
-        req = urllib.request.Request("https://en.wikipedia.org/api/rest_v1/page/random/summary", headers=headers)
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            wdata = json.loads(resp.read().decode("utf-8"))
-        extract = ghost_sanitize(wdata.get("extract", ""))
-        title = ghost_sanitize(wdata.get("title", ""))
-        page_url = wdata.get("content_urls", {}).get("desktop", {}).get("page", "https://en.wikipedia.org")
-        low_ext = extract.lower()
-        if title and len(extract) > 140 and not any(t in low_ext for t in skip_wiki_terms):
-            candidates.append({
-                "category": "ENCYCLOPEDIC SPOTLIGHT",
-                "title": f"The Story Behind {title}",
-                "fact": extract[:360] + ("..." if len(extract) > 360 else ""),
-                "context": f"Documented in encyclopedic archives under '{title}', showing how specific historical and scientific milestones connect to broader human knowledge.",
-                "source": "Wikipedia Archives",
-                "url": page_url,
-                "relevance_score": 8.5,
-                "popularity_score": 8.4,
-            })
-    except Exception:
-        pass
+    history = load_history()
+    used_titles = {str(f.get("title", "")).strip().lower() for f in history.get("facts", [])}
+    unused_curated = [f for f in candidates if f["title"].strip().lower() not in used_titles]
+    max_attempts = 8 if not unused_curated else 1
+
+    for _ in range(max_attempts):
+        try:
+            req = urllib.request.Request("https://en.wikipedia.org/api/rest_v1/page/random/summary", headers=headers)
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                wdata = json.loads(resp.read().decode("utf-8"))
+            extract = ghost_sanitize(wdata.get("extract", ""))
+            title = ghost_sanitize(wdata.get("title", ""))
+            page_url = wdata.get("content_urls", {}).get("desktop", {}).get("page", "https://en.wikipedia.org")
+            low_ext = extract.lower()
+            cand_title = f"The Story Behind {title}"
+            if (
+                title
+                and cand_title.lower() not in used_titles
+                and len(extract) > 140
+                and not any(t in low_ext for t in skip_wiki_terms)
+            ):
+                candidates.append({
+                    "category": "ENCYCLOPEDIC SPOTLIGHT",
+                    "title": cand_title,
+                    "fact": extract[:360] + ("..." if len(extract) > 360 else ""),
+                    "context": f"Documented in encyclopedic archives under '{title}', showing how specific historical and scientific milestones connect to broader human knowledge.",
+                    "source": "Wikipedia Archives",
+                    "url": page_url,
+                    "relevance_score": 8.5,
+                    "popularity_score": 8.4,
+                })
+                break
+        except Exception:
+            break
     return candidates
 
 
