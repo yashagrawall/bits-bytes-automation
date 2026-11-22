@@ -533,11 +533,12 @@ def render_news_spotlight_slide(
     draw_clean_graph_paper_card(canvas, (COL_X1, 825, COL_X2, 1086), accent_bar_color=MUSTARD_GOLD)
     draw.text((COL_X1 + COL_PAD, 858), "WHY THIS MATTERS FOR US:", font=get_font("black", 19), fill=PIXEL_BRIGHT)
 
-    takeaway = (
-        "This took the #01 spot this week for its direct impact on campus innovation, students, and researchers. Swipe for the final 3-second poll!"
-        if rank == 1
-        else "One big story still beats this one. Ready for the #01 Highlight of the Week? Swipe right now to see what took the top spot."
-    )
+    if rank == 1:
+        takeaway = "This took the #01 spot this week for its direct impact on campus innovation, students, and researchers. Swipe for the final 3-second poll!"
+    elif rank == 2:
+        takeaway = "One big story still beats this one. Ready for the #01 Highlight of the Week? Swipe right now to see what took the top spot."
+    else:
+        takeaway = f"{rank - 1} big stories still beat this one. Swipe right now for Highlight #{rank - 1:02d}!"
     draw_fitted_text_block(
         draw,
         takeaway,

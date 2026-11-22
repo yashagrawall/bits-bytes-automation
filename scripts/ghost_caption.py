@@ -56,6 +56,7 @@ def strip_markdown_formatting(text: str) -> str:
     cleaned = re.sub(r"\*\*([^\n*]+?)\*\*", r"\1", text)
     cleaned = re.sub(r"__([^\n_]+?)__", r"\1", cleaned)
     cleaned = re.sub(r"`([^`\n]+?)`", r"\1", cleaned)
+    cleaned = cleaned.replace("**", "").replace("__", "_").replace("`", "")
     return cleaned
 
 

@@ -700,7 +700,7 @@ def collect_live_news() -> List[Dict[str, Any]]:
             items = [el for el in root.iter() if _xml_local_tag(el.tag) in ("item", "entry")][:20]
             kept_from_feed = 0
             for item in items:
-                if kept_from_feed >= 3:
+                if kept_from_feed >= 10:
                     break
                 title = strip_html_tags(_xml_child_text(item, "title"))
                 link = _xml_child_text(item, "link")
@@ -1060,8 +1060,8 @@ def run_autonomous_job(
     dedup_result = filter_and_rank_candidates(content_type, candidates, limit=dedup_limit)
     selected_items = dedup_result["selected"]
     if content_type == "news":
-        # Merge seed fallback AFTER dedup if live RSS yielded fewer than 10 unique stories
-        if len(selected_items) < 10:
+        # Merge seed fallback ONLY for offline/dry-runs (never mix placeholder URLs into live emails)
+        if len(selected_items) < 10 and not send_mail:
             seed_candidates = _load_seed_news_candidates()
             if seed_candidates:
                 dedup_result = filter_and_rank_candidates(
@@ -1071,6 +1071,11 @@ def run_autonomous_job(
                 )
                 selected_items = dedup_result["selected"]
         selected_items = _enforce_source_diversity(selected_items, limit=10, max_per_source=3)
+        if send_mail and len(selected_items) < 3:
+            raise RuntimeError(
+                f"Live RSS feeds returned only {len(selected_items)} unique news items (need >= 3); "
+                "refusing to send email with placeholder seed links."
+            )
     else:
         selected_items = selected_items[:limit]
 
@@ -1176,7 +1181,7 @@ def run_autonomous_job(
     manifest_path = pkg_dir / "package_manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
 
-    if commit_ledger:
+    if commit_ledger and not to_override:
         try:
             rel_manifest = str(manifest_path.relative_to(BASE_DIR))
         except ValueError:
@@ -1444,7 +1449,7 @@ def run_combined_sample_email(
             plain_text_body="\n".join(plain_lines),
         )
 
-    if commit_ledger:
+    if commit_ledger and not to_override:
         today_iso = now_ist.strftime("%Y-%m-%d")
         sent_ok = manifest.get("email_delivery", {}).get("sent", False)
         try:
