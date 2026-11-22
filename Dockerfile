@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 
-LABEL maintainer="Yash Agrawall <sender@example.com>"
+LABEL maintainer="SOLE Bits & Bytes (IGIT Sarang)"
 LABEL description="Standalone Zero-Subscription Content, 1080x1350 Design, /GHOST Caption & Email Engine for SOLE Bits & Bytes (IGIT Sarang)"
 
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -25,7 +25,7 @@ RUN mkdir -p /usr/share/fonts/julietaula-montserrat-fonts \
              /usr/share/fonts/google-crosextra-caladea-fonts \
              /usr/share/fonts/liberation-serif-fonts && \
     find /usr/share/fonts -iname "Montserrat-*.otf" -o -iname "Montserrat-*.ttf" | while read -r f; do \
-        ln -sf "$f" "/usr/share/fonts/julietaula-montserrat-fonts/$(basename "${f%.*}").otf"; \
+        ln -sf "$f" "/usr/share/fonts/julietaula-montserrat-fonts/$(basename "$f")"; \
     done && \
     find /usr/share/fonts -iname "Caladea-*.ttf" | while read -r f; do \
         ln -sf "$f" "/usr/share/fonts/google-crosextra-caladea-fonts/$(basename "$f")"; \
@@ -36,9 +36,9 @@ RUN mkdir -p /usr/share/fonts/julietaula-montserrat-fonts \
 
 RUN pip install --no-cache-dir Pillow
 
-WORKDIR /home/yashagrawall/bits-bytes-automation
+WORKDIR /app
 
-COPY . /home/yashagrawall/bits-bytes-automation
+COPY . /app
 
 EXPOSE 8765
 

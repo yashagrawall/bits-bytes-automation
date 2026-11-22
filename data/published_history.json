@@ -2,7 +2,7 @@
   "metadata": {
     "project": "SOLE Bits & Bytes Automation (IGIT Sarang)",
     "created_at": "2026-11-18T23:58:00+05:30",
-    "last_updated": "2026-11-20T00:05:40.480537+05:30",
+    "last_updated": "2026-11-21T13:48:03.552682+05:30",
     "drive_ledger_file_id": null
   },
   "news": [
@@ -245,6 +245,126 @@
       "combined_score": 9.25,
       "hash": "a81cc94943173bd5",
       "date_added": "2026-11-20T00:05:17.368018+05:30"
+    },
+    {
+      "category": "SCIENCE & TECH",
+      "headline": "‘All human, no AI’ Riemann hypothesis proof out on same day as Claude’s claim",
+      "summary": "‘We are still here. We are very much alive. We are not going anywhere,’ mathematician Alessandro Masullo wrote in his paper detailing his efforts to crack mathematics’s greatest unsolved problem",
+      "source": "The Hindu Sci-Tech",
+      "url": "https://www.thehindu.com/sci-tech/science/all-human-no-ai-riemann-hypothesis-proof-out-on-same-day-as-claudes-claim/article71727336.ece",
+      "relevance_score": 9.3,
+      "popularity_score": 9.2,
+      "combined_score": 9.25,
+      "hash": "8fef05d8c13fad19",
+      "date_added": "2026-11-21T13:48:03.552641+05:30"
+    },
+    {
+      "category": "SCIENCE & TECH",
+      "headline": "AI cracks math’s most famous problem. Have mathematicians lost a guiding light?",
+      "summary": "Levent Alpöge of Anthropic has announced that he and the company’s AI model Claude have found a proof of the Riemann hypothesis, which concerns the distribution of prime numbers. Mathematicians have spent more than 160 years trying to prove it",
+      "source": "The Hindu Sci-Tech",
+      "url": "https://www.thehindu.com/sci-tech/science/anthropic-scientist-claims-proof-of-maths-most-famous-problem-with-ai-help/article71727161.ece",
+      "relevance_score": 9.3,
+      "popularity_score": 9.2,
+      "combined_score": 9.25,
+      "hash": "cf4a4d5e694453f9",
+      "date_added": "2026-11-21T13:48:03.552641+05:30"
+    },
+    {
+      "category": "SCIENCE & TECH",
+      "headline": "Watch | How has ‘Project Cheetah’ progressed in India?",
+      "summary": "A video explainer on 'Project Cheetah', the first intercontinental transfer of wild cats into the country.",
+      "source": "The Hindu Sci-Tech",
+      "url": "https://www.thehindu.com/sci-tech/energy-and-environment/how-has-project-cheetah-progressed-in-india/article66230373.ece",
+      "relevance_score": 9.3,
+      "popularity_score": 9.2,
+      "combined_score": 9.25,
+      "hash": "6128a1ba32cef95b",
+      "date_added": "2026-11-21T13:48:03.552641+05:30"
+    },
+    {
+      "category": "SCIENCE & TECH",
+      "headline": "Daily Quiz: On Voyager 1",
+      "summary": "Test yourself on Voyager 1 which on November 18 became the first human-made object to travel ‘one light day’",
+      "source": "The Hindu Sci-Tech",
+      "url": "https://www.thehindu.com/sci-tech/science/daily-quiz-on-voyager-1/article71722882.ece",
+      "relevance_score": 9.3,
+      "popularity_score": 9.2,
+      "combined_score": 9.25,
+      "hash": "80fee846e2e8c9af",
+      "date_added": "2026-11-21T13:48:03.552641+05:30"
+    },
+    {
+      "category": "HIGHER EDUCATION",
+      "headline": "JEE Main 2027 Session 1 registration closes tomorrow; over 13 lakh candidates apply",
+      "summary": "Latest higher education development reported by Indian Express Education.",
+      "source": "Indian Express Education",
+      "url": "https://indianexpress.com/article/education/jee-main-2027-session-1-registration-ends-late-fee-exam-dates-jeemain-nta-nic-in-10972562/",
+      "relevance_score": 9.3,
+      "popularity_score": 9.2,
+      "combined_score": 9.25,
+      "hash": "28ec0bc321584166",
+      "date_added": "2026-11-21T13:48:03.552641+05:30"
+    },
+    {
+      "category": "TECHNOLOGY",
+      "headline": "SpaceX's Starshield troubles in Ukraine could threaten its broader military business",
+      "summary": "\"Explain the changes that were made to the Starshield service in October 2026.\"",
+      "source": "Ars Technica",
+      "url": "https://arstechnica.com/space/2026/11/incoming-house-chair-threatens-spacex-funding-over-ukraine-controversy/",
+      "relevance_score": 9.3,
+      "popularity_score": 9.2,
+      "combined_score": 9.25,
+      "hash": "e72d6352ecf9f8d4",
+      "date_added": "2026-11-21T13:48:03.552641+05:30"
+    },
+    {
+      "category": "TECHNOLOGY",
+      "headline": "Google rolls out new search homepage with AI chat history and no search button",
+      "summary": "Google search is making it even easier to access AI tools on the search page.",
+      "source": "Ars Technica",
+      "url": "https://arstechnica.com/ai/2026/11/googles-latest-search-page-redesign-drops-the-search-button-adds-ai-sidebar/",
+      "relevance_score": 9.3,
+      "popularity_score": 9.2,
+      "combined_score": 9.25,
+      "hash": "c7006ba8b22af28a",
+      "date_added": "2026-11-21T13:48:03.552641+05:30"
+    },
+    {
+      "category": "TECHNOLOGY",
+      "headline": "Meta reconsiders 2030 net-zero goal amid record emissions from AI data centers",
+      "summary": "Meta is “re-evaluating” 2030 sustainability goals. Will others follow?",
+      "source": "Ars Technica",
+      "url": "https://arstechnica.com/ai/2026/11/meta-reconsiders-2030-net-zero-goal-amid-record-emissions-from-ai-data-centers/",
+      "relevance_score": 9.3,
+      "popularity_score": 9.2,
+      "combined_score": 9.25,
+      "hash": "18f804ec2e48f38c",
+      "date_added": "2026-11-21T13:48:03.552641+05:30"
+    },
+    {
+      "category": "TECHNOLOGY",
+      "headline": "Researcher plants 2m canaries into the AI supply chain. A privacy disaster surfaced.",
+      "summary": "Test using prompts with unique, trackable secrets proves that data doesn't stay private.",
+      "source": "Ars Technica",
+      "url": "https://arstechnica.com/security/2026/11/a-leaky-ai-supply-chain-is-exposing-secret-user-data-at-an-alarming-rate/",
+      "relevance_score": 9.3,
+      "popularity_score": 9.2,
+      "combined_score": 9.25,
+      "hash": "fa42d3799130dbac",
+      "date_added": "2026-11-21T13:48:03.552641+05:30"
+    },
+    {
+      "category": "INDIA & POLICY",
+      "headline": "Why a shortage of clinical psychologists in Keralam govt hospitals is leaving people with intellectual disabilities waiting for certificates",
+      "summary": "As per the last Kerala Disability Census in 2015, there are about 80,000 persons with various intellectual challenges. However, government hospitals and medical college hospitals in the State currently have only 22 clinical psychologists to conduct IQ...",
+      "source": "The Hindu National",
+      "url": "https://www.thehindu.com/news/national/kerala/why-a-shortage-of-clinical-psychologists-in-keralam-govt-hospitals-is-leaving-people-with-intellectual-disabilities-waiting-for-certificates/article71727630.ece",
+      "relevance_score": 9.3,
+      "popularity_score": 9.2,
+      "combined_score": 9.25,
+      "hash": "ce67fa0994720a4a",
+      "date_added": "2026-11-21T13:48:03.552641+05:30"
     }
   ],
   "facts": [
@@ -355,6 +475,16 @@
       "email_sent": false,
       "social_published": false,
       "created_at": "2026-11-20T00:05:40.480453+05:30"
+    },
+    {
+      "package_id": "2026-Nov-W3-Saturday_news",
+      "content_type": "news",
+      "run_date_iso": "2026-11-21",
+      "subject": "[2026-Nov-W3-Saturday] : Bits & Bytes Social Media Post : Weekly Top 10 News Highlights",
+      "manifest_path": "/home/yashagrawall/bits-bytes-automation/output/2026-Nov-W3-Saturday_news/package_manifest.json",
+      "email_sent": true,
+      "social_published": false,
+      "created_at": "2026-11-21T13:48:03.552641+05:30"
     }
   ]
 }

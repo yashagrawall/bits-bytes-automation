@@ -20,7 +20,7 @@ body:
         - Random Vocabulary / Thesaurus
         - Email Delivery / Recipients
         - GitHub Actions Cron
-        - Local Docker / n8n
+        - Local Docker
     validations:
       required: true
   - type: textarea

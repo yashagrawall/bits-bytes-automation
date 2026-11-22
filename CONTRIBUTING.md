@@ -5,7 +5,7 @@ Thank you for helping maintain the **Bits & Bytes** social media automation for 
 ## Common Maintainer Tasks
 
 ### 1. Updating the Email Roster (`To` / `Cc`)
-Edit `config/contacts.json` under `recipients.to` or `recipients.cc`, then verify the resolved lists locally without sending any mail:
+Copy `config/contacts.example.json` to `config/contacts.json` (gitignored), edit `recipients.to` / `recipients.cc`, and update the `CONTACTS_JSON` GitHub Actions repository secret. Verify locally without sending mail:
 ```bash
 python3 -c "import sys; sys.path.insert(0, 'scripts'); from package_and_deliver import load_contacts, resolve_recipients; to, cc = resolve_recipients(load_contacts()); print('TO:', to); print('CC:', cc)"
 ```
@@ -25,11 +25,11 @@ python3 scripts/standalone_engine.py --type vocab --no-commit
 ```
 If you need to inspect an actual email in your inbox, use `--to-override` so you do not spam the entire team:
 ```bash
-python3 scripts/standalone_engine.py --type combined-sample --send-mail --to-override your_email@gmail.com
+python3 scripts/standalone_engine.py --type combined-sample --send-mail --no-commit --to-override your_email@gmail.com
 ```
 
 ## Rules Before Opening a PR
-- **Never commit `.env`** or any Gmail App Passwords / API keys.
+- **Never commit `.env` or `config/contacts.json`** (personal emails, phone numbers, App Passwords, or API keys).
 - **Do not commit ephemeral `output/` files** (already ignored in `.gitignore`).
 - **Keep `data/published_history.json` intact** so previously published topics are not repeated.
 - **Preserve brand guidelines:** Instagram-only (`@sole_igit`), Week Edition badge present, `WEEKLY NEWS HIGHLIGHTS` title, no slide number markers, and no relevance/source clutter on graphic cards.

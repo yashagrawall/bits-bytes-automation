@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
 /GHOST Anti-AI Caption Generator & Sanitizer for SOLE Bits & Bytes (IGIT Sarang).
-Applies the strict mechanical checks from the `plain-writing` skill:
+Instagram-only (@sole_igit):
 1. Zero em dashes (—) or en dashes (–) anywhere in the prose.
-2. Strips AI-tell vocabulary (delve, tapestry, testament, pivotal, underscore, landscape,
-   vibrant, seamless, crucial, fostering, moreover, furthermore, in conclusion, etc.).
-3. Generates authentic, student-written Instagram (@sole_igit) and LinkedIn captions
-   with high-reach literary, campus, and topic-specific hashtags.
+2. Strips AI-tell vocabulary and raw Markdown (**bold**, __italic__, `code`).
+3. Prevents duplicate hashtag blocks by stripping inline hashtags from body text
+   and appending one unified, deduplicated Instagram hashtag block.
 """
 
+import math
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 BANNED_PHRASES = [
     (r"\bdelve(?:s|d)?\s+into\b", "look at"),
@@ -48,27 +48,57 @@ CORE_HASHTAGS_IG = [
     "#CampusLife",
 ]
 
-CORE_HASHTAGS_LINKEDIN = [
-    "#IGITSarang",
-    "#SOLE",
-    "#BitsAndBytes",
-    "#StudentLeadership",
-    "#LiterarySociety",
-]
+
+def strip_markdown_formatting(text: str) -> str:
+    """Removes raw Markdown bold/italic/code syntax so captions render cleanly everywhere."""
+    if not text:
+        return ""
+    cleaned = re.sub(r"\*\*([^\n*]+?)\*\*", r"\1", text)
+    cleaned = re.sub(r"__([^\n_]+?)__", r"\1", cleaned)
+    cleaned = re.sub(r"`([^`\n]+?)`", r"\1", cleaned)
+    return cleaned
+
+
+def strip_embedded_hashtags(text: str) -> tuple[str, List[str]]:
+    """
+    Removes hashtag-only lines and trailing hashtag clusters from caption prose
+    so the final caption never has two separate hashtag blocks.
+    Returns (cleaned_text, extracted_hashtags).
+    """
+    if not text:
+        return "", []
+    extracted: List[str] = []
+    kept_lines: List[str] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        # Drop spacer dots if an LLM already included them
+        if stripped == ".":
+            continue
+        tokens = stripped.split()
+        if tokens and all(tok.startswith("#") and len(tok) > 1 for tok in tokens):
+            extracted.extend(tokens)
+            continue
+        kept_lines.append(line)
+    body = "\n".join(kept_lines)
+    # Also remove any trailing inline hashtags at the very end of the caption
+    trailing_tags = re.findall(r"(?:\s+#[A-Za-z0-9_]+)+\s*$", body)
+    if trailing_tags:
+        extracted.extend(re.findall(r"#[A-Za-z0-9_]+", trailing_tags[-1]))
+        body = re.sub(r"(?:\s+#[A-Za-z0-9_]+)+\s*$", "", body)
+    body = re.sub(r"\n{3,}", "\n\n", body).strip()
+    return body, extracted
 
 
 def ghost_sanitize(text: str) -> str:
     """
-    Mechanical pass that removes em/en dashes, curly quotes, and AI vocabulary tells.
+    Mechanical pass that removes em/en dashes, raw Markdown, and AI vocabulary tells.
     """
     if not text:
         return ""
-    # Replace em dashes and en dashes with commas, colons, or plain hyphens
-    cleaned = re.sub(r"\s*[—–]\s*", " - ", text)
-    # Remove banned AI phrases
+    cleaned = strip_markdown_formatting(text)
+    cleaned = re.sub(r"\s*[—–]\s*", " - ", cleaned)
     for pattern, replacement in BANNED_PHRASES:
         cleaned = re.sub(pattern, replacement, cleaned, flags=re.IGNORECASE)
-    # Collapse double spaces on the same line
     cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
     cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
     return cleaned.strip()
@@ -76,59 +106,79 @@ def ghost_sanitize(text: str) -> str:
 
 def audit_ghost_compliance(text: str) -> Dict[str, Any]:
     """
-    Verifies that a caption contains zero em/en dashes and zero banned AI buzzwords.
+    Verifies that a caption contains zero em/en dashes, zero raw Markdown asterisks,
+    and zero banned AI buzzwords.
     """
     has_em_dash = "—" in text or "–" in text
+    has_raw_markdown = bool(re.search(r"\*\*|__|`.+?`", text))
     found_buzzwords = []
     for pattern, _ in BANNED_PHRASES:
         if re.search(pattern, text, flags=re.IGNORECASE):
             found_buzzwords.append(pattern)
     return {
-        "passed": (not has_em_dash) and (len(found_buzzwords) == 0),
+        "passed": (not has_em_dash) and (not has_raw_markdown) and (len(found_buzzwords) == 0),
         "has_em_or_en_dash": has_em_dash,
+        "has_raw_markdown": has_raw_markdown,
         "found_buzzwords": found_buzzwords,
     }
 
 
-def build_captions(content_type: str, selected_items: List[Dict[str, Any]], week_label: str, custom_caption: Dict[str, str] = None) -> Dict[str, Any]:
+def _dedupe_hashtags(tags: List[str], max_tags: int = 16) -> List[str]:
+    seen: set = set()
+    result: List[str] = []
+    for raw in tags:
+        clean = re.sub(r"[^A-Za-z0-9_#]", "", str(raw or "").strip())
+        if not clean:
+            continue
+        if not clean.startswith("#"):
+            clean = f"#{clean}"
+        if len(clean) <= 1:
+            continue
+        key = clean.lower()
+        if key not in seen:
+            seen.add(key)
+            result.append(clean)
+        if len(result) >= max_tags:
+            break
+    return result
+
+
+def build_captions(
+    content_type: str,
+    selected_items: List[Dict[str, Any]],
+    week_label: str,
+    custom_caption: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
     """
-    Builds or sanitizes the Instagram and LinkedIn captions and hashtag blocks.
+    Builds or sanitizes the Instagram (@sole_igit) caption and unified hashtag block.
     """
-    if custom_caption and custom_caption.get("instagram") and custom_caption.get("linkedin"):
-        ig_raw = ghost_sanitize(custom_caption["instagram"])
-        li_raw = ghost_sanitize(custom_caption["linkedin"])
-        extra_tags = custom_caption.get("hashtags", [])
+    extracted_tags: List[str] = []
+
+    if custom_caption and isinstance(custom_caption.get("instagram"), str) and custom_caption["instagram"].strip():
+        body_no_tags, extracted_tags = strip_embedded_hashtags(custom_caption["instagram"])
+        ig_raw = ghost_sanitize(body_no_tags)
+        extra_tags = list(custom_caption.get("hashtags") or []) + extracted_tags
     elif content_type == "news":
-        top1 = selected_items[0] if len(selected_items) > 0 else {}
-        top2 = selected_items[1] if len(selected_items) > 1 else {}
-        top3 = selected_items[2] if len(selected_items) > 2 else {}
+        n_items = len(selected_items)
+        top1 = selected_items[0] if n_items > 0 else {}
+        top2 = selected_items[1] if n_items > 1 else {}
+        top3 = selected_items[2] if n_items > 2 else {}
+        # Slide 1 = Cover, ceil((n_items - 2)/2) slides for #n..#3, +1 for #02, +1 for #01
+        top1_slide = 1 + math.ceil(max(0, n_items - 2) / 2) + 2
         ig_lines = [
-            f"10 big stories happened this week while you were busy with classes and labs ({week_label}).",
+            f"{n_items} big stories happened this week while you were busy with classes and labs ({week_label}).",
             "",
             "Here is a quick peek inside our Weekly News Highlights:",
             f"- {top3.get('headline', '')}",
             f"- {top2.get('headline', '')}",
-            f"- Plus our #01 highlight on Slide 7 ({top1.get('category', 'Campus Spotlight')}).",
+            f"- Plus our #01 highlight on Slide {top1_slide} ({top1.get('category', 'Campus Spotlight')}).",
             "",
             "Swipe till the last slide and vote A, B, or C in our weekly poll.",
         ]
-        li_lines = [
-            f"Bits -N- Bytes Weekly News Highlights ({week_label}) | SOLE, IGIT Sarang",
-            "",
-            "Don't have an hour to scroll the news? Our Bits & Bytes team at SOLE (Society Of Literary Enthusiasts), IGIT Sarang, distilled the week's 10 biggest developments into a 60-second Weekly News Highlights recap with verified primary sources:",
-            "",
-        ]
-        for idx, item in enumerate(selected_items[:10], 1):
-            li_lines.append(f"#{idx:02d}. {item.get('headline', '')} ({item.get('source', '')})")
-        li_lines.extend([
-            "",
-            "Swipe through the carousel to see all 10 highlights.",
-        ])
         ig_raw = ghost_sanitize("\n".join(ig_lines))
-        li_raw = ghost_sanitize("\n".join(li_lines))
         extra_tags = [
             "#WeeklyNews", "#CurrentAffairs", "#Top10News", "#NewsDigest",
-            "#TechNews", "#WorldNews", "#IndiaNews", "#StudentReads", "#StayInformed"
+            "#TechNews", "#WorldNews", "#IndiaNews", "#StudentReads", "#StayInformed",
         ]
     elif content_type == "facts":
         item = selected_items[0]
@@ -142,30 +192,18 @@ def build_captions(content_type: str, selected_items: List[Dict[str, Any]], week
             "",
             "Swipe to the last slide and comment A, B, or C: did you know this before today?",
         ]
-        li_lines = [
-            f"Bits -N- Bytes Tuesday Fact Drop ({week_label}) | SOLE, IGIT Sarang",
-            "",
-            f"{item.get('title', '')}",
-            f"{item.get('fact', '')}",
-            "",
-            f"{item.get('context', '')}",
-            f"Source: {item.get('source', 'Verified Research')}",
-        ]
         ig_raw = ghost_sanitize("\n".join([l for l in ig_lines if l is not None]))
-        li_raw = ghost_sanitize("\n".join([l for l in li_lines if l is not None]))
         extra_tags = [
             "#DidYouKnow", "#FactOfTheWeek", "#RandomFacts", "#Trivia",
-            "#ScienceFacts", "#HistoryFacts", "#CuriousMinds", "#LearnSomethingNew"
+            "#ScienceFacts", "#HistoryFacts", "#CuriousMinds", "#LearnSomethingNew",
         ]
     else:  # vocab
         item = selected_items[0]
         word = item.get("word", "")
         pos = item.get("part_of_speech", "")
         defn = item.get("definition", "")
-        example = item.get("example", "")
-        syns = ", ".join(item.get("synonyms", [])[:4])
         ig_lines = [
-            f"Ever experienced this exact feeling, but didn't know there was a single word for it?",
+            "Ever experienced this exact feeling, but didn't know there was a single word for it?",
             "",
             f"\"{defn}\"",
             "",
@@ -173,31 +211,17 @@ def build_captions(content_type: str, selected_items: List[Dict[str, Any]], week
             "",
             "Swipe through to unlock the word, then drop a short sentence using it in the comments. Best sentence gets pinned by @sole_igit.",
         ]
-        li_lines = [
-            f"Bits & Bytes Vocabulary Spotlight ({week_label}) | SOLE, IGIT Sarang",
-            "",
-            f"Word: {word} ({pos})",
-            f"Definition: {defn}",
-            f"Synonyms: {syns}" if syns else "",
-            f"Example: \"{example}\"",
-        ]
-        ig_raw = ghost_sanitize("\n".join([l for l in ig_lines if l != ""]))
-        li_raw = ghost_sanitize("\n".join([l for l in li_lines if l != ""]))
+        ig_raw = ghost_sanitize("\n".join(ig_lines))
         extra_tags = [
             "#WordOfTheWeek", "#Vocabulary", "#Thesaurus", "#EnglishLiterature",
-            "#Lexicon", "#WritersOfInstagram", "#WordNerd", "#LanguageLovers"
+            "#Lexicon", "#WritersOfInstagram", "#WordNerd", "#LanguageLovers",
         ]
 
-    all_ig_tags = list(dict.fromkeys(CORE_HASHTAGS_IG + [t if t.startswith("#") else f"#{t}" for t in extra_tags]))
-    all_li_tags = list(dict.fromkeys(CORE_HASHTAGS_LINKEDIN + [t if t.startswith("#") else f"#{t}" for t in extra_tags[:5]]))
-
+    all_ig_tags = _dedupe_hashtags(CORE_HASHTAGS_IG + extra_tags, max_tags=16)
     ig_full = f"{ig_raw}\n\n.\n.\n.\n{' '.join(all_ig_tags)}"
-    li_full = f"{li_raw}\n\n{' '.join(all_li_tags)}"
 
     return {
         "instagram_caption": ig_full,
-        "linkedin_caption": li_full,
         "hashtags": all_ig_tags,
         "ghost_audit_ig": audit_ghost_compliance(ig_full),
-        "ghost_audit_li": audit_ghost_compliance(li_full),
     }

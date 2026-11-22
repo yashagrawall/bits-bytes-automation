@@ -16,12 +16,11 @@ Design & Layout Guarantees:
 import argparse
 import csv
 import json
-import math
 import random
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATE_PATH = BASE_DIR / "assets" / "bits_n_bytes_template.jpg"
@@ -114,20 +113,21 @@ def get_font(name: str, size: int) -> ImageFont.FreeTypeFont:
 
 
 def wrap_text_lines(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont, max_width: int) -> List[str]:
-    words = (text or "").split()
-    if not words:
-        return []
     lines: List[str] = []
-    current = words[0]
-    for word in words[1:]:
-        test = f"{current} {word}"
-        bbox = draw.textbbox((0, 0), test, font=font)
-        if (bbox[2] - bbox[0]) <= max_width:
-            current = test
-        else:
-            lines.append(current)
-            current = word
-    lines.append(current)
+    for paragraph in (text or "").splitlines():
+        words = paragraph.split()
+        if not words:
+            continue
+        current = words[0]
+        for word in words[1:]:
+            test = f"{current} {word}"
+            bbox = draw.textbbox((0, 0), test, font=font)
+            if (bbox[2] - bbox[0]) <= max_width:
+                current = test
+            else:
+                lines.append(current)
+                current = word
+        lines.append(current)
     return lines
 
 
@@ -568,7 +568,7 @@ def render_fact_carousel(item: Dict[str, Any], week_label: str) -> List[Image.Im
     twist_sent = " ".join(sentences[1:]) if len(sentences) > 1 else context
 
     s1 = render_cover_slide(
-        edition_badge="TUESDAY FACT DROP",
+        edition_badge="FACT OF THE WEEK",
         week_display=week_display,
         hook_headline=f"MYSTERY: {title}",
         sub_hook="Most people only know half of this story. Swipe for the plot twist →",
@@ -663,7 +663,7 @@ def render_vocab_carousel(item: Dict[str, Any], week_label: str) -> List[Image.I
     etym = item.get("etymology", "")
 
     s1 = render_cover_slide(
-        edition_badge="WEDNESDAY WORD DROP",
+        edition_badge="WORD OF THE WEEK",
         week_display=week_display,
         hook_headline=f"There's a single {len(word)}-letter English word for this exact feeling...",
         sub_hook="Bet you've felt it on campus, but never knew what to call it. Swipe →",
@@ -688,16 +688,17 @@ def render_vocab_carousel(item: Dict[str, Any], week_label: str) -> List[Image.I
 
     draw_clean_purple_card(s2, (COL_X1, 678, COL_X2, 1086), border_color=SOLE_CYAN, seed=44)
     d2.text((COL_X1 + COL_PAD, 714), "MOST PEOPLE TAKE 20 WORDS TO EXPLAIN THIS.", font=get_font("extrabold", 20), fill=SOLE_CYAN)
+    first_letter = word[0].upper() if word else "?"
     draw_fitted_text_block(
         d2,
-        f"Writers use just ONE {len(word)}-letter {pos} (starts with '{word[0].upper()}'). Can you guess it before swiping to the next slide?",
+        f"Writers use just ONE {len(word)}-letter {pos} (starts with '{first_letter}'). Can you guess it before swiping to the next slide?",
         box=(COL_X1 + COL_PAD, 758, COL_X2 - COL_PAD, 1060),
         font_name="bold",
         max_font_size=26,
         min_font_size=19,
         fill=TEXT_WHITE,
     )
-    draw_bottom_cliffhanger_bar(d2, f"SWIPE TO UNLOCK THE WORD (STARTS WITH '{word[0].upper()}') →", y=1118)
+    draw_bottom_cliffhanger_bar(d2, f"SWIPE TO UNLOCK THE WORD (STARTS WITH '{first_letter}') →", y=1118)
 
     # Slide 3: Step 2 — Word Unlocked + IGIT Campus Usage (Centered at x = 165..915)
     s3 = create_authentic_blank_frame(week_display=week_display, seed=302)
@@ -706,9 +707,17 @@ def render_vocab_carousel(item: Dict[str, Any], week_label: str) -> List[Image.I
     draw_clean_purple_card(s3, (COL_X1, 210, COL_X2, 648), border_color=MUSTARD_GOLD, seed=55)
     draw_inline_pill(d3, COL_X1 + COL_PAD, 236, "STEP 2  •  WORD UNLOCKED", bg_color=SOLE_CYAN, text_color=MUSTARD_INK, font_size=18, white_outline=False)
 
-    f_word = get_font("black", 62)
-    d3.text((COL_X1 + COL_PAD + 5, 297), word.upper(), font=f_word, fill=(6, 4, 16))
-    d3.text((COL_X1 + COL_PAD, 292), word.upper(), font=f_word, fill=MUSTARD_GOLD)
+    max_word_w = COL_X2 - COL_X1 - 2 * COL_PAD
+    word_upper = word.upper()
+    f_word = get_font("black", 30)
+    for sz in range(62, 29, -2):
+        cand_font = get_font("black", sz)
+        bb = d3.textbbox((0, 0), word_upper, font=cand_font)
+        if (bb[2] - bb[0]) <= max_word_w:
+            f_word = cand_font
+            break
+    d3.text((COL_X1 + COL_PAD + 5, 297), word_upper, font=f_word, fill=(6, 4, 16))
+    d3.text((COL_X1 + COL_PAD, 292), word_upper, font=f_word, fill=MUSTARD_GOLD)
     d3.text((COL_X1 + COL_PAD, 376), f"{pron}   •   {pos.upper()}", font=get_font("serif_italic", 28), fill=SOLE_CYAN)
 
     draw_fitted_text_block(
@@ -744,26 +753,36 @@ def render_vocab_carousel(item: Dict[str, Any], week_label: str) -> List[Image.I
     d4.text((COL_X1 + COL_PAD, 296), "SIMILAR VIBES (SYNONYMS):", font=get_font("black", 19), fill=EMERALD)
     px_cursor, py_cursor = COL_X1 + COL_PAD, 332
     for syn in syns:
-        w_pill, _ = draw_inline_pill(d4, px_cursor, py_cursor, syn.upper(), bg_color=DENIM_BLUE, text_color=TEXT_WHITE, font_size=16, pad_x=16, pad_y=7)
-        px_cursor += w_pill + 14
-        if px_cursor > COL_X2 - 140:
+        syn_txt = syn.upper()
+        syn_bb = d4.textbbox((0, 0), syn_txt, font=get_font("black", 16))
+        est_w = (syn_bb[2] - syn_bb[0]) + 32
+        if px_cursor > COL_X1 + COL_PAD and (px_cursor + est_w) > (COL_X2 - COL_PAD):
             px_cursor = COL_X1 + COL_PAD
             py_cursor += 50
+        w_pill, _ = draw_inline_pill(d4, px_cursor, py_cursor, syn_txt, bg_color=DENIM_BLUE, text_color=TEXT_WHITE, font_size=16, pad_x=16, pad_y=7)
+        px_cursor += w_pill + 14
 
-    d4.text((COL_X1 + COL_PAD, 455), "EXACT OPPOSITES (ANTONYMS):", font=get_font("black", 19), fill=CORAL)
-    px_cursor = COL_X1 + COL_PAD
+    ant_heading_y = max(455, py_cursor + 56)
+    d4.text((COL_X1 + COL_PAD, ant_heading_y), "EXACT OPPOSITES (ANTONYMS):", font=get_font("black", 19), fill=CORAL)
+    px_cursor, py_ant = COL_X1 + COL_PAD, ant_heading_y + 37
     for ant in ants:
-        w_pill, _ = draw_inline_pill(d4, px_cursor, 492, ant.upper(), bg_color=(76, 22, 48), text_color=TEXT_WHITE, font_size=16, pad_x=16, pad_y=7)
+        ant_txt = ant.upper()
+        ant_bb = d4.textbbox((0, 0), ant_txt, font=get_font("black", 16))
+        est_w = (ant_bb[2] - ant_bb[0]) + 32
+        if px_cursor > COL_X1 + COL_PAD and (px_cursor + est_w) > (COL_X2 - COL_PAD):
+            px_cursor = COL_X1 + COL_PAD
+            py_ant += 48
+        w_pill, _ = draw_inline_pill(d4, px_cursor, py_ant, ant_txt, bg_color=(76, 22, 48), text_color=TEXT_WHITE, font_size=16, pad_x=16, pad_y=7)
         px_cursor += w_pill + 14
 
     if etym:
         draw_fitted_text_block(
             d4,
             f"ORIGIN: {etym}",
-            box=(COL_X1 + COL_PAD, 568, COL_X2 - COL_PAD, 700),
+            box=(COL_X1 + COL_PAD, max(568, py_ant + 54), COL_X2 - COL_PAD, 706),
             font_name="medium",
             max_font_size=18,
-            min_font_size=14,
+            min_font_size=13,
             fill=TEXT_LIGHT,
         )
 
@@ -850,14 +869,13 @@ def render_interactive_outro_slide(
     return canvas
 
 
-def export_canva_csv_and_gslides_batch(
+def export_canva_csv(
     content_type: str,
     selected_items: List[Dict[str, Any]],
     week_label: str,
     out_dir: Path,
-) -> Tuple[Path, Path]:
+) -> Path:
     csv_path = out_dir / "canva_autofill.csv"
-    gslides_path = out_dir / "gslides_batch.json"
 
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
         if content_type == "news":
@@ -902,14 +920,7 @@ def export_canva_csv_and_gslides_batch(
                     "week_label": week_label,
                 })
 
-    ops: List[Dict[str, Any]] = [
-        {"op": "set-background", "slide": "p", "color": "#040F1D"},
-        {"op": "add-textbox", "slide": "p", "text": f"SOLE | IGIT SARANG — BITS -N- BYTES ({week_label})", "x": 40, "y": 30, "width": 640, "height": 35, "font_size": 16, "bold": True, "color": "#2DD4EE", "font_family": "Montserrat"},
-    ]
-    with open(gslides_path, "w", encoding="utf-8") as f:
-        json.dump(ops, f, indent=2, ensure_ascii=False)
-
-    return csv_path, gslides_path
+    return csv_path
 
 
 def render_package_designs(
@@ -925,13 +936,13 @@ def render_package_designs(
 
     week_display = format_human_week(week_label)
     rendered_images: List[Image.Image] = []
-    png_paths: List[str] = []
 
     if content_type == "news":
         items = list(selected_items[:10])
-        while len(items) < 10 and items:
-            items.append(items[-1])
+        if len(items) < 3:
+            raise RuntimeError(f"Need at least 3 unique news items to render carousel, got {len(items)}")
 
+        total_n = len(items)
         top1 = items[0]
         top2 = items[1]
         top3 = items[2]
@@ -939,48 +950,74 @@ def render_package_designs(
         s1 = render_cover_slide(
             edition_badge="WEEKLY NEWS HIGHLIGHTS",
             week_display=week_display,
-            hook_headline=f"10 big stories this week. Wait till you see #01 ({top1.get('category', 'Campus')}):",
-            sub_hook=f"\"{top1.get('headline', '')}\" — Swipe through all 10 highlights →",
+            hook_headline=f"{total_n} big stories this week. Wait till you see #01 ({top1.get('category', 'Campus')}):",
+            sub_hook=f"\"{top1.get('headline', '')}\" - Swipe through all {total_n} highlights →",
         )
         rendered_images.append(s1)
 
-        pairs = [
-            (9, 10, 8, 9, 20, f"NEXT (#08 & #07): {items[7].get('headline', '')} →"),
-            (7, 8, 6, 7, 30, f"NEXT (#06 & #05): {items[5].get('headline', '')} →"),
-            (5, 6, 4, 5, 40, f"NEXT (#04 & #03): {items[3].get('headline', '')} →"),
-            (3, 4, 2, 3, 50, f"NEXT (#02 HIGHLIGHT): {top2.get('headline', '')} →"),
-        ]
-        for idx_a, rank_a, idx_b, rank_b, seed_val, teaser in pairs:
-            slide = render_news_dual_slide(
-                items[idx_a],
-                rank_a,
-                items[idx_b],
-                rank_b,
-                week_display,
-                seed_val,
-                teaser,
-            )
-            rendered_images.append(slide)
+        # Pair remaining stories (indices total_n-1 down to 2) without duplicating any story
+        rem_indices = list(range(total_n - 1, 1, -1))
+        seed_val = 20
+        pos = 0
+        while pos < len(rem_indices):
+            if pos + 1 < len(rem_indices):
+                idx_a = rem_indices[pos]
+                idx_b = rem_indices[pos + 1]
+                rank_a, rank_b = idx_a + 1, idx_b + 1
+                next_pos = pos + 2
+                if next_pos + 1 < len(rem_indices):
+                    n_a, n_b = rem_indices[next_pos], rem_indices[next_pos + 1]
+                    teaser = f"NEXT (#{n_a + 1:02d} & #{n_b + 1:02d}): {items[n_a].get('headline', '')} →"
+                elif next_pos < len(rem_indices):
+                    n_a = rem_indices[next_pos]
+                    teaser = f"NEXT (#{n_a + 1:02d} HIGHLIGHT): {items[n_a].get('headline', '')} →"
+                else:
+                    teaser = f"NEXT (#02 HIGHLIGHT): {top2.get('headline', '')} →"
+                rendered_images.append(
+                    render_news_dual_slide(
+                        items[idx_a],
+                        rank_a,
+                        items[idx_b],
+                        rank_b,
+                        week_display,
+                        seed_val,
+                        teaser,
+                    )
+                )
+                seed_val += 10
+                pos += 2
+            else:
+                idx_single = rem_indices[pos]
+                rendered_images.append(
+                    render_news_spotlight_slide(
+                        items[idx_single],
+                        rank=idx_single + 1,
+                        week_display=week_display,
+                        badge_label="WEEKLY NEWS HIGHLIGHT",
+                        next_teaser=f"NEXT (#02 HIGHLIGHT): {top2.get('headline', '')} →",
+                    )
+                )
+                pos += 1
 
-        s6 = render_news_spotlight_slide(
+        s_top2 = render_news_spotlight_slide(
             top2,
             rank=2,
             week_display=week_display,
             badge_label="WEEKLY NEWS HIGHLIGHT",
             next_teaser=f"NEXT SLIDE: THE #01 HIGHLIGHT OF THE WEEK ({top1.get('category', 'SPOTLIGHT')}) →",
         )
-        rendered_images.append(s6)
+        rendered_images.append(s_top2)
 
-        s7 = render_news_spotlight_slide(
+        s_top1 = render_news_spotlight_slide(
             top1,
             rank=1,
             week_display=week_display,
             badge_label="MOST IMPORTANT HIGHLIGHT OF THE WEEK",
             next_teaser="FINAL SLIDE: CAST YOUR VOTE IN THIS WEEK'S 3-SECOND POLL →",
         )
-        rendered_images.append(s7)
+        rendered_images.append(s_top1)
 
-        s8 = render_interactive_outro_slide(
+        s_outro = render_interactive_outro_slide(
             week_display=week_display,
             headline_summary=f"Curated for the {week_display} edition of Bits -N- Bytes.",
             question_prompt="Which of this week's Top 3 news highlights is the biggest deal?",
@@ -990,7 +1027,7 @@ def render_package_designs(
                 f"C) #03: {top3.get('headline', '')}",
             ],
         )
-        rendered_images.append(s8)
+        rendered_images.append(s_outro)
 
     elif content_type == "facts":
         rendered_images = render_fact_carousel(selected_items[0], week_label)
@@ -999,6 +1036,7 @@ def render_package_designs(
     else:
         raise ValueError(f"Unknown content_type: {content_type}")
 
+    slide_paths: List[str] = []
     rgb_images: List[Image.Image] = []
     for idx, img in enumerate(rendered_images, 1):
         rgb = img.convert("RGB")
@@ -1006,9 +1044,19 @@ def render_package_designs(
         # High-quality 4:4:4 JPEG (zero chroma subsampling blur, 4x faster Gmail SMTP & smaller storage)
         p = slides_dir / f"slide_{idx:02d}.jpg"
         rgb.save(p, format="JPEG", quality=92, subsampling=0, optimize=True)
-        png_paths.append(str(p))
+        slide_paths.append(str(p))
 
-    pdf_path = out_dir / "carousel_slides.pdf"
+    pdf_title_map = {
+        "news": "Weekly_News_Highlights",
+        "facts": "Random_Fact",
+        "vocab": "Random_Vocabulary",
+    }
+    safe_date = re.sub(r"[^A-Za-z0-9_-]+", "_", (week_label or "Edition").strip())
+    pdf_filename = f"{safe_date}_{pdf_title_map.get(content_type, content_type.title())}.pdf"
+    pdf_path = out_dir / pdf_filename
+    for old_pdf in out_dir.glob("*.pdf"):
+        if old_pdf != pdf_path:
+            old_pdf.unlink(missing_ok=True)
     if rgb_images:
         rgb_images[0].save(
             pdf_path,
@@ -1019,15 +1067,14 @@ def render_package_designs(
             append_images=rgb_images[1:],
         )
 
-    csv_path, gslides_path = export_canva_csv_and_gslides_batch(content_type, selected_items, week_label, out_dir)
+    csv_path = export_canva_csv(content_type, selected_items, week_label, out_dir)
 
     return {
-        "slide_count": len(png_paths),
-        "png_paths": png_paths,
+        "slide_count": len(slide_paths),
+        "slide_paths": slide_paths,
+        "carousel_pdf_name": pdf_filename,
         "carousel_pdf_path": str(pdf_path),
-        "linkedin_pdf_path": str(pdf_path),
         "canva_csv_path": str(csv_path),
-        "gslides_batch_path": str(gslides_path),
     }
 
 
@@ -1036,7 +1083,7 @@ def main() -> None:
     parser.add_argument("--type", choices=["news", "facts", "vocab"], required=True)
     parser.add_argument("--input", required=True, help="JSON file containing selected items")
     parser.add_argument("--week-label", required=True, help="Formatted date label e.g. 2026-Nov-W3-Saturday")
-    parser.add_argument("--out-dir", required=True, help="Output folder for PNGs, PDF, CSV, and Slides JSON")
+    parser.add_argument("--out-dir", required=True, help="Output folder for 1080x1350 JPGs, dated Carousel PDF, and Canva CSV")
     args = parser.parse_args()
 
     with open(args.input, "r", encoding="utf-8") as f:

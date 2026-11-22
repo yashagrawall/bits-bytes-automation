@@ -1,9 +1,9 @@
 ====================================================================
 SOLE (IGIT SARANG) — BITS & BYTES PUBLISHED CONTENT LEDGER
-Last Updated: 2026-11-20T00:05:40.480537+05:30
+Last Updated: 2026-11-21T13:48:03.552682+05:30
 ====================================================================
 
---- WEEKLY TOP 10 NEWS HIGHLIGHTS (20 items) ---
+--- WEEKLY TOP 10 NEWS HIGHLIGHTS (30 items) ---
 1. [2026-11-20] Technical Universities in Odisha Expand Semiconductor and Clean-Energy Research Labs (New Indian Express) | URL: https://www.newindianexpress.com/states/odisha/tech-universities-semiconductor-labs | Hash: 73085630b5ec04b2
 2. [2026-11-20] ISRO Completes Key Gaganyaan Crew Module Propulsion Test Ahead of Orbital Mission (ISRO / The Hindu) | URL: https://www.thehindu.com/sci-tech/science/isro-gaganyaan-propulsion-test | Hash: 13d9ec0506dbfc24
 3. [2026-11-20] Open-Source Fellowships Open Applications for Undergraduate Student Contributors (Linux Foundation) | URL: https://lfx.linuxfoundation.org/ | Hash: acb3d8e6c6bf07d5
@@ -24,6 +24,16 @@ Last Updated: 2026-11-20T00:05:40.480537+05:30
 18. [2026-11-20] Claude Fable 5.2 solves two open problems in the physics of black holes (Hacker News Frontpage) | URL: https://www.anthropic.com/research/claude-black-hole-physics | Hash: 92b536e7f199436f
 19. [2026-11-20] Chrome AI features wasting much bandwidth (Hacker News Frontpage) | URL: https://perishablepress.com/chrome-ai-wasting-much-bandwidth/ | Hash: 5fd5904e13e8de7b
 20. [2026-11-20] Launch HN: Onlook (YC W25) - An open-source developer tool for designers (Hacker News Frontpage) | URL: https://github.com/onlook-dev/onlook/ | Hash: a81cc94943173bd5
+21. [2026-11-21] ‘All human, no AI’ Riemann hypothesis proof out on same day as Claude’s claim (The Hindu Sci-Tech) | URL: https://www.thehindu.com/sci-tech/science/all-human-no-ai-riemann-hypothesis-proof-out-on-same-day-as-claudes-claim/article71727336.ece | Hash: 8fef05d8c13fad19
+22. [2026-11-21] AI cracks math’s most famous problem. Have mathematicians lost a guiding light? (The Hindu Sci-Tech) | URL: https://www.thehindu.com/sci-tech/science/anthropic-scientist-claims-proof-of-maths-most-famous-problem-with-ai-help/article71727161.ece | Hash: cf4a4d5e694453f9
+23. [2026-11-21] Watch | How has ‘Project Cheetah’ progressed in India? (The Hindu Sci-Tech) | URL: https://www.thehindu.com/sci-tech/energy-and-environment/how-has-project-cheetah-progressed-in-india/article66230373.ece | Hash: 6128a1ba32cef95b
+24. [2026-11-21] Daily Quiz: On Voyager 1 (The Hindu Sci-Tech) | URL: https://www.thehindu.com/sci-tech/science/daily-quiz-on-voyager-1/article71722882.ece | Hash: 80fee846e2e8c9af
+25. [2026-11-21] JEE Main 2027 Session 1 registration closes tomorrow; over 13 lakh candidates apply (Indian Express Education) | URL: https://indianexpress.com/article/education/jee-main-2027-session-1-registration-ends-late-fee-exam-dates-jeemain-nta-nic-in-10972562/ | Hash: 28ec0bc321584166
+26. [2026-11-21] SpaceX's Starshield troubles in Ukraine could threaten its broader military business (Ars Technica) | URL: https://arstechnica.com/space/2026/11/incoming-house-chair-threatens-spacex-funding-over-ukraine-controversy/ | Hash: e72d6352ecf9f8d4
+27. [2026-11-21] Google rolls out new search homepage with AI chat history and no search button (Ars Technica) | URL: https://arstechnica.com/ai/2026/11/googles-latest-search-page-redesign-drops-the-search-button-adds-ai-sidebar/ | Hash: c7006ba8b22af28a
+28. [2026-11-21] Meta reconsiders 2030 net-zero goal amid record emissions from AI data centers (Ars Technica) | URL: https://arstechnica.com/ai/2026/11/meta-reconsiders-2030-net-zero-goal-amid-record-emissions-from-ai-data-centers/ | Hash: 18f804ec2e48f38c
+29. [2026-11-21] Researcher plants 2m canaries into the AI supply chain. A privacy disaster surfaced. (Ars Technica) | URL: https://arstechnica.com/security/2026/11/a-leaky-ai-supply-chain-is-exposing-secret-user-data-at-an-alarming-rate/ | Hash: fa42d3799130dbac
+30. [2026-11-21] Why a shortage of clinical psychologists in Keralam govt hospitals is leaving people with intellectual disabilities waiting for certificates (The Hindu National) | URL: https://www.thehindu.com/news/national/kerala/why-a-shortage-of-clinical-psychologists-in-keralam-govt-hospitals-is-leaving-people-with-intellectual-disabilities-waiting-for-certificates/article71727630.ece | Hash: ce67fa0994720a4a
 
 --- RANDOM FACTS (2 items) ---
 1. [2026-11-20] The Story Behind Hideki Matsui: Hideki Matsui , nicknamed "Godzilla", is a Japanese former professional baseball outfielder and designated hitter who is the manager of the Yomiuri Giants of Nippon Professional Baseball's Central League. He played in Major League Baseball (MLB) for the New York Yankees, Los Angeles Angels of Anaheim, Oakland Athletics, Tampa Bay Rays, and in Nippon Professi... | Hash: 5cb4f0ab242836c5

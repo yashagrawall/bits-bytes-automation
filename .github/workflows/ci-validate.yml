@@ -17,6 +17,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install Fonts (Montserrat, Caladea & Liberation)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends fonts-montserrat fonts-crosextra-caladea fonts-liberation2 fontconfig
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -28,17 +33,22 @@ jobs:
       - name: Syntax-check Python scripts
         run: python3 -m py_compile scripts/*.py
 
-      - name: Validate config/contacts.json & recipient resolution
+      - name: Validate contacts schema, recipient resolution & FreeType font loading
         run: |
           python3 -c "
           import sys
           sys.path.insert(0, 'scripts')
+          from PIL import ImageFont
           from package_and_deliver import load_contacts, resolve_recipients
+          from render_designs import get_font
           to_list, cc_list = resolve_recipients(load_contacts())
           assert len(to_list) > 0, 'TO list cannot be empty'
           overlap = set(to_list) & set(cc_list)
           assert not overlap, f'Overlap between TO and CC: {overlap}'
-          print(f'Validated contacts: {len(to_list)} TO, {len(cc_list)} CC')
+          for fname in ('black', 'bold', 'regular', 'serif_bold', 'serif_italic'):
+              font = get_font(fname, 24)
+              assert isinstance(font, ImageFont.FreeTypeFont), f'Expected FreeTypeFont for {fname}, got {type(font)}'
+          print(f'Validated contacts ({len(to_list)} TO, {len(cc_list)} CC) & FreeType fonts.')
           "
 
       - name: Verify pre-baked HD static assets & history ledger exist
@@ -49,3 +59,19 @@ jobs:
           test -f assets/base_inner_frame.png
           python3 -c "import json; json.load(open('data/published_history.json'))"
           echo "All static assets and history ledger verified."
+
+      - name: Run offline dry-run & /GHOST caption compliance checks
+        run: |
+          python3 scripts/standalone_engine.py --type facts --no-commit
+          python3 scripts/standalone_engine.py --type vocab --no-commit
+          python3 scripts/standalone_engine.py --type news --no-commit
+          python3 -c "
+          import glob, json
+          manifests = glob.glob('output/*/package_manifest.json')
+          assert len(manifests) >= 3, f'Expected >=3 manifests, got {len(manifests)}'
+          for path in manifests:
+              m = json.load(open(path, encoding='utf-8'))
+              audit = m['captions']['ghost_audit_ig']
+              assert audit['passed'], f'/GHOST audit failed in {path}: {audit}'
+          print(f'Verified {len(manifests)} dry-run packages and /GHOST compliance.')
+          "

@@ -1,24 +1,20 @@
 #!/usr/bin/env python3
 """
-100% Standalone, Zero-Subscription, Antigravity-Independent Automation Engine
-for SOLE — Bits & Bytes (IGIT Sarang).
+100% Standalone, Zero-Subscription, Offline-Capable Automation Engine
+for SOLE — Bits & Bytes (IGIT Sarang, @sole_igit).
 
-Runs completely independently inside Docker (`docker compose up -d`) OR on free
-GitHub Actions cron runners (even when your PC/laptop is powered off).
+Runs autonomously on free GitHub Actions cron runners (even when your laptop is off)
+OR inside Docker (`docker compose up -d`).
 
 Zero Paid Subscriptions Required ($0/month):
-- Content Discovery: Direct RSS/Atom feeds (The Hindu, Indian Express, ISRO, Nature,
-  Ars Technica, Hacker News, ScienceDaily), Wikipedia Featured/Random API, Free Dictionary API,
-  and Datamuse Thesaurus API.
-- AI Ranking & Synthesis: Local Ollama (`gemma4:e2b` at host.docker.internal:11434) when local,
-  or free Google AI Studio (`GEMINI_API_KEY`) when running offline in the cloud, with a
-  deterministic fallback that works even with zero API keys.
-- Graphic & Carousel Design: Built-in Pillow 1080x1350 PNG + LinkedIn PDF renderer (`render_designs.py`).
-- /GHOST Anti-AI Captions: Built-in mechanical sanitizer (`ghost_caption.py`).
-- Email Delivery: Standard Python `smtplib` over Gmail TLS (`smtp.gmail.com:587`) using a free
-  Google App Password — attaches all rendered 1080x1350 PNGs and LinkedIn PDF directly.
-- Social Media Auto-Posting: Direct REST calls to the 100% Free Official Meta Instagram Graph API
-  (`@sole_igit`) and LinkedIn REST API, with free public image hosting via GitHub Raw URLs or Catbox.moe.
+- Content Discovery: Direct RSS/Atom feeds (The Hindu, Indian Express, Nature,
+  Ars Technica, The Guardian Books, Hacker News), Curated Facts Archive + filtered
+  Wikipedia API, Curated Literary Vocabulary Bank + Free Dictionary/Datamuse API.
+- AI Caption Refinement (optional): Local Ollama (`gemma4:e2b`) or free Google AI Studio
+  (`GEMINI_API_KEY`), with deterministic `/GHOST` sanitizer & fallback.
+- Graphic & Carousel Design: Built-in Pillow 1080x1350 JPG + dated Carousel PDF renderer.
+- Email Delivery: RFC-5322 compliant multipart email (clean plain-text + HTML with inline
+  HD logos + JPG slides & dated Carousel PDF) via Gmail TLS SMTP (`smtp.gmail.com:587`).
 """
 
 import argparse
@@ -39,7 +35,6 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from email.mime.base import MIMEBase
-from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -53,13 +48,23 @@ from package_and_deliver import (
     OUTPUT_ROOT,
     build_html_email,
     build_markdown_brief,
+    build_plain_text_email,
     format_date_code,
     load_contacts,
+    render_content_block_html,
+    render_signature_html,
     resolve_recipients,
 )
 from render_designs import render_package_designs
 
 IST = timezone(timedelta(hours=5, minutes=30))
+
+# Canonical IST Mail Schedule (weekday: 0=Mon .. 6=Sun)
+MAIL_DAY_MAP: Dict[int, str] = {
+    1: "facts",  # Tuesday 6:00 PM IST -> Wednesday post
+    2: "vocab",  # Wednesday 6:00 PM IST -> Thursday post
+    5: "news",   # Saturday 6:00 PM IST -> Sunday post
+}
 
 # Free RSS Feeds for Weekly Top 10 News (No API keys or subscriptions required)
 FREE_NEWS_FEEDS = [
@@ -69,10 +74,25 @@ FREE_NEWS_FEEDS = [
     ("SCIENCE", "Nature News", "https://www.nature.com/nature.rss"),
     ("INDIA & POLICY", "The Hindu National", "https://www.thehindu.com/news/national/feeder/default.rss"),
     ("LITERATURE & BOOKS", "The Guardian Books", "https://www.theguardian.com/books/rss"),
-    ("COMPUTING", "Hacker News Frontpage", "https://hnrss.org/frontpage"),
+    ("COMPUTING", "ScienceDaily Tech", "https://www.sciencedaily.com/rss/top/technology.xml"),
 ]
 
-# Curated Literary Vocabulary Bank (queried against Free Dictionary API + Datamuse Thesaurus API)
+JUNK_NEWS_PATTERNS = [
+    r"\bdaily quiz\b",
+    r"^watch\s*\|",
+    r"\bschool assembly\b",
+    r"\bcrossword\b",
+    r"\bhoroscope\b",
+    r"\blive updates?\b",
+    r"\blive blog\b",
+    r"\bweb stor(?:y|ies)\b",
+    r"\bpodcast\b",
+    r"^ask hn:",
+    r"^show hn:",
+    r"^launch hn:",
+]
+
+# Curated Literary Vocabulary Bank (28 words + live API fallback when exhausted)
 VOCAB_WORD_BANK = [
     {
         "word": "Vellichor",
@@ -154,9 +174,209 @@ VOCAB_WORD_BANK = [
         "antonyms": ["blank slate", "tabula rasa"],
         "etymology": "From Greek 'palimpsestos', meaning 'scraped again'.",
     },
+    {
+        "word": "Sonder",
+        "pronunciation": "/ˈsɒn.dər/",
+        "part_of_speech": "noun",
+        "definition": "The sudden realization that every random passerby is living a life as vivid, complex, and deeply felt as your own.",
+        "example": "Sitting on the train back to campus after semester break brought a quiet wave of sonder while watching strangers on the platform.",
+        "synonyms": ["empathy", "awareness", "perspective", "epiphany"],
+        "antonyms": ["solipsism", "detachment", "obliviousness"],
+        "etymology": "Coined by John Koenig, drawing on German 'sonder-' (special) and French 'sonder' (to probe).",
+    },
+    {
+        "word": "Laconic",
+        "pronunciation": "/ləˈkɒn.ɪk/",
+        "part_of_speech": "adjective",
+        "definition": "Using very few words; expressing much in a concise, pointed, and spare style.",
+        "example": "His laconic two-line commit message explained a bug fix that had stumped the team for three days.",
+        "synonyms": ["terse", "succinct", "concise", "pithy"],
+        "antonyms": ["verbose", "loquacious", "wordy"],
+        "etymology": "From Greek 'Lakonikos' (Spartan), referring to the famously brief speech of ancient Spartans.",
+    },
+    {
+        "word": "Petrichor",
+        "pronunciation": "/ˈpɛt.rɪ.kɔːr/",
+        "part_of_speech": "noun",
+        "definition": "The warm, earthy scent produced when rain falls on dry soil after a long stretch of heat.",
+        "example": "After a blistering June afternoon in Odisha, the sudden monsoon petrichor pulled everyone out onto the hostel balcony.",
+        "synonyms": ["earthiness", "rain-scent", "aroma", "fragrance"],
+        "antonyms": ["aridity", "staleness", "dryness"],
+        "etymology": "Coined in 1964 by CSIRO researchers from Greek 'petra' (stone) and 'ichor' (ethereal fluid).",
+    },
+    {
+        "word": "Halcyon",
+        "pronunciation": "/ˈhæl.si.ən/",
+        "part_of_speech": "adjective",
+        "definition": "Denoting a period of time in the past that was idyllically peaceful, calm, and golden.",
+        "example": "Final-year students often look back on the halcyon evenings of their first winter fest.",
+        "synonyms": ["serene", "tranquil", "idyllic", "peaceful"],
+        "antonyms": ["turbulent", "chaotic", "stormy"],
+        "etymology": "From Greek 'alkyon' (kingfisher), a bird mythically said to calm the sea while nesting.",
+    },
+    {
+        "word": "Apricity",
+        "pronunciation": "/əˈprɪs.ɪ.ti/",
+        "part_of_speech": "noun",
+        "definition": "The gentle warmth of the sun felt on a cold winter day.",
+        "example": "Students gathered on the library steps between classes to soak in the December apricity.",
+        "synonyms": ["sun-warmth", "radiance", "glow", "balminess"],
+        "antonyms": ["chill", "frost", "bleakness"],
+        "etymology": "From Latin 'apricitas', derived from 'apricus' meaning 'warmed by the sun'.",
+    },
+    {
+        "word": "Limerence",
+        "pronunciation": "/ˈlɪm.ər.əns/",
+        "part_of_speech": "noun",
+        "definition": "An involuntary state of intense romantic infatuation paired with an acute longing for emotional reciprocation.",
+        "example": "Classic Victorian novels frequently blur the line between enduring devotion and fleeting limerence.",
+        "synonyms": ["infatuation", "ardor", "yearning", "besottedness"],
+        "antonyms": ["indifference", "apathy", "detachment"],
+        "etymology": "Coined by psychologist Dorothy Tennov in 1979 to distinguish infatuation from long-term love.",
+    },
+    {
+        "word": "Ineffable",
+        "pronunciation": "/ɪnˈɛf.ə.bəl/",
+        "part_of_speech": "adjective",
+        "definition": "Too great, subtle, or extreme to be captured or expressed adequately in words.",
+        "example": "There is an ineffable relief in handing in your final exam paper and walking out into the evening air.",
+        "synonyms": ["indescribable", "unutterable", "transcendent", "unspeakable"],
+        "antonyms": ["definable", "expressible", "ordinary"],
+        "etymology": "From Latin 'ineffabilis', from 'in-' (not) + 'effari' (to speak out).",
+    },
+    {
+        "word": "Soliloquy",
+        "pronunciation": "/səˈlɪl.ə.kwi/",
+        "part_of_speech": "noun",
+        "definition": "An act of speaking one's thoughts aloud when alone or regardless of listeners, especially in drama.",
+        "example": "Her rehearsed soliloquy for the college drama competition echoed across the empty seminar hall.",
+        "synonyms": ["monologue", "aside", "speech", "address"],
+        "antonyms": ["dialogue", "conversation", "colloquy"],
+        "etymology": "From Late Latin 'soliloquium', from 'solus' (alone) + 'loqui' (to speak).",
+    },
+    {
+        "word": "Ebullient",
+        "pronunciation": "/ɪˈbʌl.jənt/",
+        "part_of_speech": "adjective",
+        "definition": "Overflowing with cheerful enthusiasm, energy, and high spirits.",
+        "example": "The ebullient freshers turned a routine club orientation into a two-hour spontaneous debate.",
+        "synonyms": ["exuberant", "buoyant", "vivacious", "spirited"],
+        "antonyms": ["subdued", "listless", "gloomy"],
+        "etymology": "From Latin 'ebullire' meaning 'to bubble up or boil over'.",
+    },
+    {
+        "word": "Verisimilitude",
+        "pronunciation": "/ˌvɛr.ɪ.sɪˈmɪl.ɪ.tjuːd/",
+        "part_of_speech": "noun",
+        "definition": "The appearance or quality of being true, believable, or grounded in reality within fiction or art.",
+        "example": "Small details like hostel tea stalls and power cuts gave the short story unmistakable verisimilitude.",
+        "synonyms": ["realism", "authenticity", "plausibility", "credibility"],
+        "antonyms": ["implausibility", "artificiality", "absurdity"],
+        "etymology": "From Latin 'verisimilitudo', combining 'verus' (true) + 'similis' (similar).",
+    },
+    {
+        "word": "Numinous",
+        "pronunciation": "/ˈnjuː.mɪ.nəs/",
+        "part_of_speech": "adjective",
+        "definition": "Having a strong spiritual or awe-inspiring quality; evoking quiet wonder and transcendence.",
+        "example": "Standing under a clear rural sky during a meteor shower feels genuinely numinous.",
+        "synonyms": ["awe-inspiring", "sublime", "ethereal", "transcendent"],
+        "antonyms": ["mundane", "prosaic", "commonplace"],
+        "etymology": "From Latin 'numen' (divine presence or spirit), popularized by Rudolf Otto in 1917.",
+    },
+    {
+        "word": "Iconoclast",
+        "pronunciation": "/aɪˈkɒn.ə.klæst/",
+        "part_of_speech": "noun",
+        "definition": "A person who challenges or overturns cherished beliefs, traditional institutions, or accepted conventions.",
+        "example": "Every literary movement begins with an iconoclast who refuses to write in the previous decade's style.",
+        "synonyms": ["maverick", "nonconformist", "dissenter", "rebel"],
+        "antonyms": ["conformist", "traditionalist", "orthodox"],
+        "etymology": "From Greek 'eikonoklastes', literally 'image-breaker'.",
+    },
+    {
+        "word": "Sanguine",
+        "pronunciation": "/ˈsæŋ.ɡwɪn/",
+        "part_of_speech": "adjective",
+        "definition": "Confidently optimistic and positive, especially in an apparently difficult or uncertain situation.",
+        "example": "Even after the server crashed an hour before the demo, the team stayed sanguine and shipped a clean fix.",
+        "synonyms": ["optimistic", "hopeful", "upbeat", "confident"],
+        "antonyms": ["pessimistic", "despondent", "gloomy"],
+        "etymology": "From Latin 'sanguineus' (of blood), rooted in medieval temperament theory.",
+    },
+    {
+        "word": "Ephemera",
+        "pronunciation": "/ɪˈfɛm.ər.ə/",
+        "part_of_speech": "noun",
+        "definition": "Things that exist or are used for only a short time, especially printed collectibles like tickets, posters, and pamphlets.",
+        "example": "A shoebox of old train tickets, fest passes, and handwritten notes becomes precious campus ephemera years later.",
+        "synonyms": ["memorabilia", "keepsakes", "relics", "mementos"],
+        "antonyms": ["monuments", "classics", "permanence"],
+        "etymology": "Plural of Greek 'ephemeron', meaning 'something lasting only a day'.",
+    },
+    {
+        "word": "Alacrity",
+        "pronunciation": "/əˈlæk.rɪ.ti/",
+        "part_of_speech": "noun",
+        "definition": "Brisk, cheerful readiness and eager willingness to act.",
+        "example": "She accepted the invitation to moderate the annual literary panel with unmistakable alacrity.",
+        "synonyms": ["eagerness", "enthusiasm", "promptness", "zeal"],
+        "antonyms": ["reluctance", "hesitation", "apathy"],
+        "etymology": "From Latin 'alacritas', from 'alacer' meaning 'lively, brisk'.",
+    },
+    {
+        "word": "Chiaroscuro",
+        "pronunciation": "/kiˌɑː.rəˈskjʊə.rəʊ/",
+        "part_of_speech": "noun",
+        "definition": "The dramatic interplay of strong light and deep shadow in visual art, cinema, or descriptive prose.",
+        "example": "Streetlights filtering through banyan trees cast a striking chiaroscuro across the campus road at night.",
+        "synonyms": ["contrast", "shading", "light-and-shadow", "relief"],
+        "antonyms": ["flatness", "uniformity", "monotony"],
+        "etymology": "From Italian 'chiaro' (clear, bright) + 'scuro' (dark, obscure).",
+    },
+    {
+        "word": "Zeitgeist",
+        "pronunciation": "/ˈzaɪt.ɡaɪst/",
+        "part_of_speech": "noun",
+        "definition": "The defining mood, spirit, and dominant set of ideas characterizing a particular era or generation.",
+        "example": "AI-assisted coding and open-source collaboration have reshaped the engineering campus zeitgeist.",
+        "synonyms": ["spirit of the age", "ethos", "climate", "temper"],
+        "antonyms": ["anachronism", "antiquity"],
+        "etymology": "From German 'Zeit' (time) + 'Geist' (spirit).",
+    },
+    {
+        "word": "Recalcitrant",
+        "pronunciation": "/rɪˈkæl.sɪ.trənt/",
+        "part_of_speech": "adjective",
+        "definition": "Having an obstinately uncooperative attitude toward authority, rules, or routine.",
+        "example": "No amount of restarting could persuade the recalcitrant lab projector to recognize the HDMI cable.",
+        "synonyms": ["unruly", "defiant", "obstinate", "stubborn"],
+        "antonyms": ["compliant", "amenable", "cooperative"],
+        "etymology": "From Latin 'recalcitrare', literally 'to kick back with the heel'.",
+    },
+    {
+        "word": "Ersatz",
+        "pronunciation": "/ˈɛə.zæts/",
+        "part_of_speech": "adjective",
+        "definition": "Made or used as a substitute, typically an inferior or artificial imitation of the real thing.",
+        "example": "An ersatz summary written by skimming only headings rarely survives a real viva question.",
+        "synonyms": ["imitation", "artificial", "synthetic", "makeshift"],
+        "antonyms": ["authentic", "genuine", "original"],
+        "etymology": "Borrowed from German 'Ersatz' meaning 'replacement or substitute'.",
+    },
+    {
+        "word": "Serendipity",
+        "pronunciation": "/ˌsɛr.ənˈdɪp.ɪ.ti/",
+        "part_of_speech": "noun",
+        "definition": "The occurrence of finding valuable, pleasant, or insightful things purely by fortunate chance.",
+        "example": "Pulling the wrong volume off the shelf led to pure serendipity: a forgotten anthology of Odia short fiction.",
+        "synonyms": ["fortuity", "fluke", "happy accident", "providence"],
+        "antonyms": ["misfortune", "design", "premeditation"],
+        "etymology": "Coined by Horace Walpole in 1754 from the Persian fairy tale 'The Three Princes of Serendip'.",
+    },
 ]
 
-# Multi-Domain Verifiable Facts Archive (Fallback + Augmentation for Wikipedia API)
+# Multi-Domain Verifiable Facts Archive (15 curated high-signal facts; always outrank random Wikipedia stubs)
 FACTS_ARCHIVE = [
     {
         "category": "LITERATURE & COMPUTING HISTORY",
@@ -165,6 +385,8 @@ FACTS_ARCHIVE = [
         "context": "Lovelace called her approach 'poetical science', blending mathematical logic with literary imagination. She also predicted that computing machines could one day compose music and manipulate symbols beyond pure arithmetic.",
         "source": "Bodleian Libraries, University of Oxford",
         "url": "https://bodleian.ox.ac.uk/",
+        "relevance_score": 9.6,
+        "popularity_score": 9.4,
     },
     {
         "category": "LINGUISTICS & INFORMATION THEORY",
@@ -173,6 +395,8 @@ FACTS_ARCHIVE = [
         "context": "Languages with dense syllables like Mandarin or English tend to be spoken with fewer syllables per second, whereas syllable-light languages like Spanish or Japanese are spoken faster, balancing out to the same cognitive bandwidth.",
         "source": "Science Advances (Coupé et al.)",
         "url": "https://www.science.org/doi/10.1126/sciadv.aaw2594",
+        "relevance_score": 9.5,
+        "popularity_score": 9.4,
     },
     {
         "category": "SPACE & ENGINEERING",
@@ -181,14 +405,18 @@ FACTS_ARCHIVE = [
         "context": "By the time the signal reaches Earth, its power is less than a billionth of a billionth of a watt, requiring 70-meter dish antennas and error-correcting codes to reconstruct each bit.",
         "source": "NASA Jet Propulsion Laboratory (JPL)",
         "url": "https://voyager.jpl.nasa.gov/",
+        "relevance_score": 9.5,
+        "popularity_score": 9.5,
     },
     {
         "category": "PUBLISHING & TYPOGRAPHY",
-        "title": "Oxford University Press Kept a Single Lead-Type Book in Print for 116 Years Before Selling Out Its First Run",
+        "title": "Oxford University Press Kept a Single Lead-Type Book in Print for 191 Years Before Selling Out Its First Run",
         "fact": "In 1716, Oxford University Press printed 500 copies of a Coptic translation of the New Testament by David Wilkins. The last copy of that original 500-book print run was finally sold in 1907, taking 191 years to clear the warehouse without ever going out of print.",
         "context": "Academic university presses historically served as long-term cultural archives, storing unbound sheets in vaults for over a century until scholars requested them.",
         "source": "Oxford University Press Archives",
         "url": "https://global.oup.com/about/oup_history/",
+        "relevance_score": 9.4,
+        "popularity_score": 9.2,
     },
     {
         "category": "PHYSICS & TIMEKEEPING",
@@ -197,6 +425,108 @@ FACTS_ARCHIVE = [
         "context": "These clocks would neither gain nor lose a single second over 300 billion years, more than twenty times the current age of the universe.",
         "source": "JILA / NIST Physical Review Letters",
         "url": "https://www.nist.gov/",
+        "relevance_score": 9.5,
+        "popularity_score": 9.3,
+    },
+    {
+        "category": "LITERATURE & SCIENCE",
+        "title": "Mary Shelley Wrote Frankenstein During the 'Year Without a Summer' Caused by a Volcanic Eruption",
+        "fact": "In 1815, Mount Tambora in Indonesia erupted so violently that volcanic ash cooled global temperatures in 1816. Trapped indoors by relentless rain in Geneva, 18-year-old Mary Shelley entered a ghost-story contest with Lord Byron and Percy Shelley and conceived Frankenstein.",
+        "context": "That single climate anomaly also inspired Byron's poem 'Darkness' and John Polidori's 'The Vampyre', linking atmospheric physics directly to the birth of modern science fiction.",
+        "source": "Smithsonian Magazine",
+        "url": "https://www.smithsonianmag.com/",
+        "relevance_score": 9.5,
+        "popularity_score": 9.3,
+    },
+    {
+        "category": "COMPUTING & LANGUAGE",
+        "title": "The Word 'Robot' Came From a 1920 Czech Play, Not an Engineering Lab",
+        "fact": "Czech writer Karel Čapek popularized the word 'robot' in his 1920 sci-fi play R.U.R. (Rossum's Universal Robots), suggested by his brother Josef from the Czech word 'robota', meaning forced labor.",
+        "context": "Unlike modern metal machines, Čapek's original robots were synthetic biological workers assembled in factories, raising early questions about automation and human dignity.",
+        "source": "Oxford English Dictionary / NPR",
+        "url": "https://www.oed.com/",
+        "relevance_score": 9.4,
+        "popularity_score": 9.4,
+    },
+    {
+        "category": "MATHEMATICS & INDIA",
+        "title": "Ancient Indian Prosody Inspired Binary-Like Combinatorics Centuries Before Modern Computers",
+        "fact": "Around the 3rd to 2nd century BCE, Indian scholar Pingala analyzed Sanskrit poetic meters using short (laghu) and long (guru) syllables in his treatise Chandahshastra, producing a systematic binary enumeration and what later became known as Pascal's triangle (Meru Prastara).",
+        "context": "Poetry and discrete mathematics evolved together in classical India, where memorizing exact syllable counts required algorithmic notation.",
+        "source": "Indian Journal of History of Science",
+        "url": "https://insa.nic.in/",
+        "relevance_score": 9.6,
+        "popularity_score": 9.3,
+    },
+    {
+        "category": "ASTRONOMY & HISTORY",
+        "title": "Oxford University Is Older Than the Aztec Empire",
+        "fact": "Teaching existed at Oxford by 1096 CE, and formal university structures grew rapidly after 1167. By contrast, Tenochtitlan, the capital that launched the Aztec Empire, was founded in 1325 CE, more than two centuries later.",
+        "context": "Similarly, India's ancient Nalanda Mahavihara operated for over 700 years from the 5th century CE, drawing scholars from across Asia long before European universities formed.",
+        "source": "University of Oxford Archives",
+        "url": "https://www.ox.ac.uk/about/organisation/history",
+        "relevance_score": 9.3,
+        "popularity_score": 9.5,
+    },
+    {
+        "category": "BIOLOGY & INFORMATION",
+        "title": "A Single Gram of DNA Can Theoretically Store Over 200 Petabytes of Digital Data",
+        "fact": "Because DNA encodes information in four nucleotide bases (A, C, G, T) at the molecular scale, researchers have demonstrated storing books, images, and operating systems in synthetic DNA at densities millions of times higher than flash drives.",
+        "context": "Unlike hard drives that degrade in decades, properly stored DNA remains readable for thousands of years without consuming electricity.",
+        "source": "Nature / Harvard Wyss Institute",
+        "url": "https://www.nature.com/",
+        "relevance_score": 9.5,
+        "popularity_score": 9.3,
+    },
+    {
+        "category": "LITERATURE & CRYPTOGRAPHY",
+        "title": "A 50,000-Word Novel Was Written Without Using the Letter 'E' Once - And Then Translated Without 'E' Either",
+        "fact": "French author Georges Perec published the 1969 novel La Disparition without a single occurrence of the letter 'e', the most common letter in French. In 1994, Gilbert Adair translated the entire novel into English as A Void while obeying the exact same lipogrammatic constraint.",
+        "context": "Perec belonged to Oulipo, a workshop of writers and mathematicians who used strict mathematical constraints to spark creative breakthroughs.",
+        "source": "Encyclopaedia Britannica",
+        "url": "https://www.britannica.com/",
+        "relevance_score": 9.5,
+        "popularity_score": 9.3,
+    },
+    {
+        "category": "EARTH SCIENCE & ENGINEERING",
+        "title": "The Deepest Hole Ever Drilled by Humans Reached Only 0.2 Percent of the Way to Earth's Center",
+        "fact": "The Kola Superdeep Borehole in Russia reached 12,262 meters (12.26 km) in 1989 before temperatures hit 180 degrees Celsius and forced engineers to stop, leaving over 6,350 kilometers of planet still untouched below.",
+        "context": "Scientists discovered microscopic plankton fossils 6 kilometers underground and unexpected free-flowing water trapped in fractured rock.",
+        "source": "BBC Future / Geological Archives",
+        "url": "https://www.bbc.com/future",
+        "relevance_score": 9.4,
+        "popularity_score": 9.4,
+    },
+    {
+        "category": "COMPUTING & SPACE",
+        "title": "Apollo 11's Guidance Computer Had Less RAM Than a Modern USB-C Charger Controller",
+        "fact": "The Apollo Guidance Computer that navigated astronauts to the Moon in 1969 operated at 0.043 MHz with just 2,048 words (about 4 KB) of erasable magnetic core memory and 72 KB of hand-woven rope ROM.",
+        "context": "Margaret Hamilton's team designed priority-scheduled flight software so resilient that it recovered cleanly from radar overload alarms minutes before touchdown.",
+        "source": "NASA History Division",
+        "url": "https://www.nasa.gov/history/",
+        "relevance_score": 9.5,
+        "popularity_score": 9.5,
+    },
+    {
+        "category": "LINGUISTICS & HISTORY",
+        "title": "The Earliest Known Recorded Author in Human History Was a Mesopotamian High Priestess",
+        "fact": "Around 2285 BCE, Enheduanna, high priestess of the moon god Nanna in Ur, signed her own name to Sumerian temple hymns pressed onto clay tablets, making her the earliest named author known to history.",
+        "context": "Her writings predate Homer by more than 1,500 years and establish the first recorded use of the first-person literary voice.",
+        "source": "The Morgan Library & Museum",
+        "url": "https://www.themorgan.org/",
+        "relevance_score": 9.4,
+        "popularity_score": 9.2,
+    },
+    {
+        "category": "PHYSICS & ACOUSTICS",
+        "title": "The World's Quietest Room Is So Silent You Can Hear Your Own Blood Flowing",
+        "fact": "Anechoic chambers like the one at Microsoft's Building 87 measure around -20.6 decibels, absorbing 99.99 percent of sound waves. Without ambient noise, visitors quickly hear their heartbeat, joints, and blood pulsing in their ears.",
+        "context": "Engineers use anechoic chambers to test microphones, headphones, and hardware acoustics with near-zero external interference.",
+        "source": "Guinness World Records / Microsoft Research",
+        "url": "https://www.guinnessworldrecords.com/",
+        "relevance_score": 9.3,
+        "popularity_score": 9.4,
     },
 ]
 
@@ -217,7 +547,9 @@ def load_env_file() -> None:
 
 
 def strip_html_tags(text: str) -> str:
-    text = re.sub(r"<[^>]+>", " ", text or "")
+    text = html_lib.unescape(text or "")
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = html_lib.unescape(text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
@@ -225,10 +557,9 @@ def strip_html_tags(text: str) -> str:
 def call_free_llm_json(prompt: str) -> Optional[Any]:
     """
     Zero-Cost Dual-Mode LLM Caller:
-    1. Tries Local Ollama (`OLLAMA_URL`, default http://host.docker.internal:11434 or http://localhost:11434)
-       using `OLLAMA_MODEL` (default `gemma4:e2b`).
+    1. Tries Local Ollama (`OLLAMA_URL`) using `OLLAMA_MODEL` (default `gemma4:e2b`).
     2. Tries Free Google AI Studio API (`GEMINI_API_KEY`) if configured.
-    3. Returns None cleanly if neither is reachable so deterministic scoring/synthesis takes over.
+    3. Returns None cleanly if neither is reachable so deterministic templates take over.
     """
     ollama_urls = [
         os.environ.get("OLLAMA_URL", "").strip(),
@@ -282,10 +613,67 @@ def call_free_llm_json(prompt: str) -> Optional[Any]:
     return None
 
 
+def _is_junk_news_title(title: str) -> bool:
+    low = (title or "").strip().lower()
+    if len(low) < 20:
+        return True
+    return any(re.search(pat, low) for pat in JUNK_NEWS_PATTERNS)
+
+
+def _clean_rss_summary(desc: str, source_name: str) -> str:
+    cleaned = strip_html_tags(desc)
+    # Strip Hacker News RSS boilerplate ("Article URL: ... Comments URL: ... Points: ... # Comments: ...")
+    if "article url:" in cleaned.lower() and "comments url:" in cleaned.lower():
+        return ""
+    if len(cleaned) > 260:
+        cleaned = cleaned[:257].rsplit(" ", 1)[0] + "..."
+    return cleaned
+
+
+def _score_news_item(category: str, title: str, desc: str) -> Tuple[float, float]:
+    """Differentiated heuristic scoring so news items aren't all tied at 9.3/9.2."""
+    text = f"{title} {desc}".lower()
+    rel = 8.2
+    pop = 8.1
+
+    high_rel_terms = ["india", "odisha", "isro", "iit", "nit", "university", "student", "research", "science", "quantum", "space", "book", "literature", "prize", "open-source", "open source", "semiconductor", "climate", "energy"]
+    high_pop_terms = ["ai", "space", "isro", "nobel", "booker", "breakthrough", "record", "moon", "mars", "google", "openai", "anthropic", "meta", "nasa", "climate", "health", "cyber"]
+
+    rel_hits = sum(1 for k in high_rel_terms if k in text)
+    pop_hits = sum(1 for k in high_pop_terms if k in text)
+
+    rel += min(1.3, rel_hits * 0.35)
+    pop += min(1.3, pop_hits * 0.35)
+
+    if len(desc) >= 90:
+        rel += 0.2
+        pop += 0.2
+    if category in ("SCIENCE & TECH", "SCIENCE", "LITERATURE & BOOKS", "HIGHER EDUCATION"):
+        rel += 0.15
+
+    return round(min(9.9, rel), 1), round(min(9.8, pop), 1)
+
+
+def _xml_local_tag(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1].lower() if tag else ""
+
+
+def _xml_child_text(elem: ET.Element, *names: str) -> str:
+    wanted = {n.lower() for n in names}
+    for child in elem:
+        if _xml_local_tag(child.tag) in wanted:
+            if child.text and child.text.strip():
+                return child.text.strip()
+            href = child.attrib.get("href", "").strip()
+            if href:
+                return href
+    return ""
+
+
 def collect_live_news() -> List[Dict[str, Any]]:
-    """Fetches real-time news from free RSS/Atom feeds with automatic fallback to sample_candidates_news.json."""
+    """Fetches real-time news from free RSS/RDF/Atom feeds with quality filtering and seed fallback."""
     candidates: List[Dict[str, Any]] = []
-    headers = {"User-Agent": "Mozilla/5.0 (compatible; SOLE-BitsAndBytes-Bot/2.0; +https://igitsarang.ac.in)"}
+    headers = {"User-Agent": "Mozilla/5.0 (compatible; SOLE-BitsAndBytes-Bot/2.1; +https://igitsarang.ac.in)"}
 
     for category, source_name, feed_url in FREE_NEWS_FEEDS:
         try:
@@ -293,45 +681,56 @@ def collect_live_news() -> List[Dict[str, Any]]:
             with urllib.request.urlopen(req, timeout=12) as resp:
                 xml_bytes = resp.read()
             root = ET.fromstring(xml_bytes)
-            items = root.findall(".//item")[:5]
+            items = [el for el in root.iter() if _xml_local_tag(el.tag) in ("item", "entry")][:20]
+            kept_from_feed = 0
             for item in items:
-                title = strip_html_tags(item.findtext("title") or "")
-                link = (item.findtext("link") or "").strip()
-                desc = strip_html_tags(item.findtext("description") or "")
-                if not title or len(title) < 18:
+                if kept_from_feed >= 3:
+                    break
+                title = strip_html_tags(_xml_child_text(item, "title"))
+                link = _xml_child_text(item, "link")
+                desc = _clean_rss_summary(_xml_child_text(item, "description", "summary", "content"), source_name)
+                if _is_junk_news_title(title) or not link:
                     continue
-                if len(desc) > 260:
-                    desc = desc[:257].rsplit(" ", 1)[0] + "..."
-                if not desc:
-                    desc = f"Latest {category.lower()} development reported by {source_name}."
-                # Deterministic heuristic scoring for IGIT Sarang students
-                bonus = 0.4 if any(k in title.lower() for k in ["india", "isro", "odisha", "ai", "science", "book", "student", "research", "space", "quantum", "open"]) else 0.0
+                if len(desc) < 40:
+                    continue
+                rel, pop = _score_news_item(category, title, desc)
                 candidates.append({
                     "category": category,
                     "headline": ghost_sanitize(title),
                     "summary": ghost_sanitize(desc),
                     "source": source_name,
                     "url": link,
-                    "relevance_score": round(min(9.9, 8.9 + bonus), 1),
-                    "popularity_score": round(min(9.8, 8.8 + bonus), 1),
+                    "relevance_score": rel,
+                    "popularity_score": pop,
                 })
+                kept_from_feed += 1
         except Exception:
             continue
 
-    # Merge fallback seed candidates if live network is restricted or offline
-    seed_path = BASE_DIR / "data" / "sample_candidates_news.json"
-    if seed_path.exists():
-        seed_data = json.loads(seed_path.read_text(encoding="utf-8"))
-        seed_list = seed_data if isinstance(seed_data, list) else seed_data.get("candidates", [])
-        candidates.extend(seed_list)
+    # Only merge fallback seed candidates when live RSS is unavailable/sparse,
+    # and cap fallback scores below live RSS items so live stories always win.
+    if len(candidates) < 10:
+        seed_path = BASE_DIR / "data" / "sample_candidates_news.json"
+        if seed_path.exists():
+            seed_data = json.loads(seed_path.read_text(encoding="utf-8"))
+            seed_list = seed_data if isinstance(seed_data, list) else seed_data.get("candidates", [])
+            for item in seed_list:
+                fallback_item = dict(item)
+                fallback_item["relevance_score"] = min(float(fallback_item.get("relevance_score", 7.8)), 7.8)
+                fallback_item["popularity_score"] = min(float(fallback_item.get("popularity_score", 7.6)), 7.6)
+                candidates.append(fallback_item)
 
     return candidates
 
 
 def collect_live_facts() -> List[Dict[str, Any]]:
-    """Gathers verifiable multi-domain facts from Wikipedia REST API + local curated archive."""
-    candidates: List[Dict[str, Any]] = list(FACTS_ARCHIVE)
-    headers = {"User-Agent": "SOLE-BitsAndBytes-IGITSarang/2.0 (sender@example.com)"}
+    """
+    Returns curated, verified multi-domain facts first (scored 9.3-9.6),
+    with a strictly filtered Wikipedia fallback (scored 8.5/8.4) only as overflow.
+    """
+    candidates: List[Dict[str, Any]] = [dict(f) for f in FACTS_ARCHIVE]
+    headers = {"User-Agent": "SOLE-BitsAndBytes-IGITSarang/2.1 (+https://github.com/yashagrawall/bits-bytes-automation)"}
+    skip_wiki_terms = ("footballer", "baseball", "basketball", "politician", "municipality", "village in", "album by", "disambiguation", "chemical compound used in")
     try:
         req = urllib.request.Request("https://en.wikipedia.org/api/rest_v1/page/random/summary", headers=headers)
         with urllib.request.urlopen(req, timeout=10) as resp:
@@ -339,30 +738,80 @@ def collect_live_facts() -> List[Dict[str, Any]]:
         extract = ghost_sanitize(wdata.get("extract", ""))
         title = ghost_sanitize(wdata.get("title", ""))
         page_url = wdata.get("content_urls", {}).get("desktop", {}).get("page", "https://en.wikipedia.org")
-        if title and len(extract) > 90:
+        low_ext = extract.lower()
+        if title and len(extract) > 140 and not any(t in low_ext for t in skip_wiki_terms):
             candidates.append({
                 "category": "ENCYCLOPEDIC SPOTLIGHT",
                 "title": f"The Story Behind {title}",
                 "fact": extract[:360] + ("..." if len(extract) > 360 else ""),
-                "context": f"Documented in encyclopedic archives under '{title}', showing how seemingly niche historical and scientific entries connect to broader human knowledge.",
-                "source": "Wikipedia Featured Archives",
+                "context": f"Documented in encyclopedic archives under '{title}', showing how specific historical and scientific milestones connect to broader human knowledge.",
+                "source": "Wikipedia Archives",
                 "url": page_url,
-                "relevance_score": 9.1,
-                "popularity_score": 9.0,
+                "relevance_score": 8.5,
+                "popularity_score": 8.4,
             })
     except Exception:
         pass
     return candidates
 
 
+def _fetch_live_vocab_fallback(existing_words: set) -> List[Dict[str, Any]]:
+    """Queries Datamuse + Free Dictionary API if the curated local vocab bank is ever exhausted."""
+    extras: List[Dict[str, Any]] = []
+    seed_topics = ["literature", "philosophy", "astronomy", "poetry", "rhetoric"]
+    for topic in seed_topics:
+        try:
+            dm_url = f"https://api.datamuse.com/words?ml={urllib.parse.quote(topic)}&max=12"
+            with urllib.request.urlopen(dm_url, timeout=8) as resp:
+                words = [w.get("word", "") for w in json.loads(resp.read().decode("utf-8"))]
+            for w in words:
+                if not w.isalpha() or len(w) < 7 or w.lower() in existing_words:
+                    continue
+                dict_url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{urllib.parse.quote(w)}"
+                try:
+                    with urllib.request.urlopen(dict_url, timeout=8) as dresp:
+                        entries = json.loads(dresp.read().decode("utf-8"))
+                    entry = entries[0]
+                    meaning = entry.get("meanings", [{}])[0]
+                    defn_obj = meaning.get("definitions", [{}])[0]
+                    defn = defn_obj.get("definition", "").strip()
+                    if not defn:
+                        continue
+                    extras.append({
+                        "word": w.capitalize(),
+                        "pronunciation": entry.get("phonetic") or f"/{w.lower()}/",
+                        "part_of_speech": meaning.get("partOfSpeech", "noun"),
+                        "definition": defn,
+                        "example": defn_obj.get("example") or f"Her essay used the word '{w}' with striking precision.",
+                        "synonyms": (meaning.get("synonyms") or [])[:4] or ["eloquent", "expressive"],
+                        "antonyms": (meaning.get("antonyms") or [])[:3] or ["plain"],
+                        "etymology": entry.get("origin") or "Documented in English literary dictionaries.",
+                        "relevance_score": 8.8,
+                        "popularity_score": 8.6,
+                    })
+                    if len(extras) >= 3:
+                        return extras
+                except Exception:
+                    continue
+        except Exception:
+            continue
+    return extras
+
+
 def collect_live_vocab() -> List[Dict[str, Any]]:
-    """Curates literary vocabulary words and enriches with Free Dictionary API when online."""
+    """Curates literary vocabulary words from the 28-word bank + live dictionary fallback."""
     candidates: List[Dict[str, Any]] = []
     for entry in VOCAB_WORD_BANK:
         item = dict(entry)
         item.setdefault("relevance_score", 9.5)
         item.setdefault("popularity_score", 9.3)
         candidates.append(item)
+
+    history = load_history()
+    used_words = {str(v.get("word", "")).strip().lower() for v in history.get("vocab", [])}
+    remaining = [c for c in candidates if c["word"].lower() not in used_words]
+    if len(remaining) < 3:
+        candidates.extend(_fetch_live_vocab_fallback(used_words))
     return candidates
 
 
@@ -383,33 +832,44 @@ def send_email_smtp(
     smtp_port = int(os.environ.get("SMTP_PORT", "587"))
 
     if not gmail_user or not gmail_app_password:
-        return {
-            "sent": False,
-            "reason": "GMAIL_USER or GMAIL_APP_PASSWORD not set in .env (email saved locally to email_body.html)",
-        }
+        raise RuntimeError(
+            "GMAIL_USER or GMAIL_APP_PASSWORD is not configured. "
+            "Set them in .env (local) or GitHub Repository Secrets before running with --send-mail."
+        )
 
     to_list = [e.strip() for e in to_override.split(",") if e.strip()] if to_override else list(manifest.get("to_emails", []))
     cc_list = [] if to_override else list(manifest.get("cc_emails", []))
 
+    if not to_list:
+        raise RuntimeError("No TO recipients resolved. Configure CONTACTS_JSON secret or config/contacts.json.")
+    placeholder_addrs = [e for e in (to_list + cc_list) if e.lower().endswith("@example.com")]
+    if placeholder_addrs:
+        raise RuntimeError(
+            f"Refusing to send live email to placeholder address(es): {placeholder_addrs}. "
+            "Set the CONTACTS_JSON GitHub Actions secret or create a real local config/contacts.json."
+        )
+
+    sender_name = manifest.get("sender_name") or load_contacts().get("sender", {}).get("name") or "SOLE Bits & Bytes"
+    msgid_domain = gmail_user.split("@")[-1] if "@" in gmail_user else "gmail.com"
+
     msg = MIMEMultipart("mixed")
-    msg["From"] = f"Yash Agrawall <{gmail_user}>"
+    msg["From"] = email.utils.formataddr((sender_name, gmail_user))
     msg["Reply-To"] = gmail_user
     msg["To"] = ", ".join(to_list)
     if cc_list:
         msg["Cc"] = ", ".join(cc_list)
     msg["Subject"] = manifest.get("subject", "Bits & Bytes Social Media Post")
     msg["Date"] = email.utils.formatdate(localtime=True)
-    msg["Message-ID"] = email.utils.make_msgid(domain="gmail.com")
+    msg["Message-ID"] = email.utils.make_msgid(domain=msgid_domain)
 
     html_content = Path(manifest["email_html_path"]).read_text(encoding="utf-8")
     if not plain_text_body:
-        md_path = manifest.get("markdown_brief_path")
-        if md_path and Path(md_path).exists():
-            plain_text_body = Path(md_path).read_text(encoding="utf-8")
+        txt_path = manifest.get("email_txt_path")
+        if txt_path and Path(txt_path).exists():
+            plain_text_body = Path(txt_path).read_text(encoding="utf-8")
         else:
             plain_text_body = strip_html_tags(html_content)
 
-    # Proper multipart/alternative (text/plain + multipart/related[text/html + inline logos])
     alt = MIMEMultipart("alternative")
     alt.attach(MIMEText(plain_text_body, "plain", "utf-8"))
 
@@ -436,8 +896,10 @@ def send_email_smtp(
     if custom_attachments is not None:
         attach_pairs = custom_attachments
     else:
-        attach_pairs = [(Path(p).name, Path(p)) for p in manifest.get("design_assets", {}).get("png_paths", [])]
-        pdf_path = manifest.get("design_assets", {}).get("carousel_pdf_path") or manifest.get("design_assets", {}).get("linkedin_pdf_path")
+        design_assets = manifest.get("design_assets", {})
+        slide_list = design_assets.get("slide_paths") or design_assets.get("png_paths") or []
+        attach_pairs = [(Path(p).name, Path(p)) for p in slide_list]
+        pdf_path = design_assets.get("carousel_pdf_path")
         if pdf_path and Path(pdf_path).exists():
             attach_pairs.append((Path(pdf_path).name, Path(pdf_path)))
 
@@ -481,178 +943,68 @@ def send_email_smtp(
     }
 
 
-def upload_to_free_public_host(png_path: Path) -> Optional[str]:
-    """
-    Uploads an image to a 100% free public HTTPS host so the official Meta Instagram Graph API
-    can fetch it by URL during container creation:
-    - First checks if GITHUB_RAW_BASE_URL is configured (when running via GitHub Actions).
-    - Otherwise uses catbox.moe anonymous public image hosting (100% free, no API key required).
-    """
-    gh_base = os.environ.get("GITHUB_RAW_BASE_URL", "").strip()
-    if gh_base:
-        rel = png_path.relative_to(BASE_DIR)
-        return f"{gh_base.rstrip('/')}/{rel.as_posix()}"
-
-    try:
-        boundary = "----SOLEBitsBytesBoundary7MA4YWxkTrZu0gW"
-        data_lines = [
-            f"--{boundary}\r\nContent-Disposition: form-data; name=\"reqtype\"\r\n\r\nfileupload\r\n".encode("utf-8"),
-            f"--{boundary}\r\nContent-Disposition: form-data; name=\"fileToUpload\"; filename=\"{png_path.name}\"\r\nContent-Type: image/png\r\n\r\n".encode("utf-8"),
-            png_path.read_bytes(),
-            f"\r\n--{boundary}--\r\n".encode("utf-8"),
-        ]
-        body = b"".join(data_lines)
-        req = urllib.request.Request(
-            "https://catbox.moe/user/api.php",
-            data=body,
-            headers={
-                "Content-Type": f"multipart/form-data; boundary={boundary}",
-                "User-Agent": "SOLE-BitsAndBytes-IGITSarang/2.0",
-            },
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            url = resp.read().decode("utf-8").strip()
-            if url.startswith("https://"):
-                return url
-    except Exception:
-        return None
-    return None
+def already_ran_today(content_type: str, today_iso: str) -> bool:
+    """Returns True only if this content_type was already emailed to the team today."""
+    history = load_history()
+    for pkg in history.get("packages", []):
+        if pkg.get("content_type") != content_type:
+            continue
+        if pkg.get("email_sent") is not True or pkg.get("is_test_override"):
+            continue
+        if pkg.get("run_date_iso") == today_iso:
+            return True
+        if str(pkg.get("created_at", "")).startswith(today_iso):
+            return True
+    return False
 
 
-def publish_to_instagram_graph_api(manifest: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Publishes a single photo or multi-slide carousel (up to 10 slides) to `@sole_igit`
-    using the 100% Free Official Meta Instagram Graph API (`v21.0`).
-    Requires free Meta Developer credentials in `.env`:
-      IG_BUSINESS_ACCOUNT_ID and IG_ACCESS_TOKEN
-    """
-    ig_user_id = os.environ.get("IG_BUSINESS_ACCOUNT_ID", "").strip()
-    ig_token = os.environ.get("IG_ACCESS_TOKEN", "").strip()
-    if not ig_user_id or not ig_token:
-        return {
-            "published": False,
-            "reason": "IG_BUSINESS_ACCOUNT_ID or IG_ACCESS_TOKEN not configured in .env",
-        }
-
-    png_paths = [Path(p) for p in manifest.get("design_assets", {}).get("png_paths", [])][:10]
-    caption = manifest.get("captions", {}).get("instagram_caption", "")
-
-    public_urls: List[str] = []
-    for p in png_paths:
-        u = upload_to_free_public_host(p)
-        if u:
-            public_urls.append(u)
-
-    if not public_urls:
-        return {"published": False, "reason": "Could not resolve public HTTPS URLs for PNG slides"}
-
-    base_api = f"https://graph.facebook.com/v21.0/{ig_user_id}"
-
-    if len(public_urls) == 1:
-        params = urllib.parse.urlencode({
-            "image_url": public_urls[0],
-            "caption": caption,
-            "access_token": ig_token,
-        }).encode("utf-8")
-        req = urllib.request.Request(f"{base_api}/media", data=params, method="POST")
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            creation_id = json.loads(resp.read().decode("utf-8"))["id"]
-    else:
-        child_ids: List[str] = []
-        for u in public_urls:
-            params = urllib.parse.urlencode({
-                "image_url": u,
-                "is_carousel_item": "true",
-                "access_token": ig_token,
-            }).encode("utf-8")
-            req = urllib.request.Request(f"{base_api}/media", data=params, method="POST")
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                child_ids.append(json.loads(resp.read().decode("utf-8"))["id"])
-
-        carousel_params = urllib.parse.urlencode({
-            "media_type": "CAROUSEL",
-            "children": ",".join(child_ids),
-            "caption": caption,
-            "access_token": ig_token,
-        }).encode("utf-8")
-        req = urllib.request.Request(f"{base_api}/media", data=carousel_params, method="POST")
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            creation_id = json.loads(resp.read().decode("utf-8"))["id"]
-
-    time.sleep(5)
-    pub_params = urllib.parse.urlencode({
-        "creation_id": creation_id,
-        "access_token": ig_token,
-    }).encode("utf-8")
-    pub_req = urllib.request.Request(f"{base_api}/media_publish", data=pub_params, method="POST")
-    with urllib.request.urlopen(pub_req, timeout=30) as resp:
-        media_id = json.loads(resp.read().decode("utf-8"))["id"]
-
-    return {"published": True, "instagram_media_id": media_id, "slides_published": len(public_urls)}
-
-
-def publish_to_linkedin_api(manifest: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Publishes the `/GHOST` LinkedIn update using the 100% Free Official LinkedIn API v2.
-    Requires free LinkedIn Developer credentials in `.env`:
-      LINKEDIN_ACCESS_TOKEN and LINKEDIN_AUTHOR_URN (e.g. urn:li:person:... or urn:li:organization:...)
-    """
-    li_token = os.environ.get("LINKEDIN_ACCESS_TOKEN", "").strip()
-    li_author = os.environ.get("LINKEDIN_AUTHOR_URN", "").strip()
-    if not li_token or not li_author:
-        return {
-            "published": False,
-            "reason": "LINKEDIN_ACCESS_TOKEN or LINKEDIN_AUTHOR_URN not configured in .env",
-        }
-
-    caption = manifest.get("captions", {}).get("linkedin_caption", "")
-    payload = {
-        "author": li_author,
-        "lifecycleState": "PUBLISHED",
-        "specificContent": {
-            "com.linkedin.ugc.ShareContent": {
-                "shareCommentary": {"text": caption},
-                "shareMediaCategory": "NONE",
-            }
-        },
-        "visibility": {"com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"},
-    }
-    req = urllib.request.Request(
-        "https://api.linkedin.com/v2/ugcPosts",
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {li_token}",
-            "Content-Type": "application/json",
-            "X-Restli-Protocol-Version": "2.0.0",
-        },
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        post_id = resp.headers.get("x-restli-id") or json.loads(resp.read().decode("utf-8")).get("id")
-    return {"published": True, "linkedin_post_id": post_id}
+def _enforce_source_diversity(items: List[Dict[str, Any]], limit: int = 10, max_per_source: int = 3) -> List[Dict[str, Any]]:
+    """Prevents a single RSS source from dominating all 10 news slots."""
+    selected: List[Dict[str, Any]] = []
+    overflow: List[Dict[str, Any]] = []
+    counts: Dict[str, int] = {}
+    for item in items:
+        src = item.get("source", "Unknown")
+        if counts.get(src, 0) < max_per_source:
+            selected.append(item)
+            counts[src] = counts.get(src, 0) + 1
+        else:
+            overflow.append(item)
+        if len(selected) == limit:
+            break
+    if len(selected) < limit:
+        selected.extend(overflow[: limit - len(selected)])
+    return selected[:limit]
 
 
 def run_autonomous_job(
     content_type: str,
     send_mail: bool = True,
-    publish_social: bool = False,
     commit_ledger: bool = True,
     date_code: Optional[str] = None,
     to_override: Optional[str] = None,
+    force: bool = False,
 ) -> Dict[str, Any]:
     """
     Executes the full standalone pipeline for `news`, `facts`, or `vocab`:
-    1. Live Content Collection (RSS / Wikipedia / Dictionary API + local fallback)
-    2. Deduplication against `data/published_history.json` + Relevance & Popularity Ranking
-    3. 1080x1350 Branded PNG Carousel + LinkedIn PDF Rendering
-    4. `/GHOST` Anti-AI Caption & Hashtag Sanitization
-    5. Multipart HTML Email Dispatch with PNG/PDF Attachments via Gmail SMTP
-    6. Optional Direct Social Media Auto-Posting via Meta Graph API (`@sole_igit`) & LinkedIn API
+    1. Idempotency guard (blocks duplicate sends on the same day unless --force / --to-override)
+    2. Live Content Collection + Deduplication + Relevance & Popularity Ranking
+    3. 1080x1350 Branded JPG Carousel + Dated Carousel PDF Rendering
+    4. `/GHOST` Anti-AI Instagram Caption & Unified Hashtag Block
+    5. Multipart Email Dispatch (clean plain-text + HTML + inline HD logos + attachments)
     """
     load_env_file()
     now_ist = datetime.now(IST)
+    today_iso = now_ist.strftime("%Y-%m-%d")
     date_code = date_code or format_date_code(now_ist)
+
+    if send_mail and not force and not to_override and already_ran_today(content_type, today_iso):
+        return {
+            "status": "skipped",
+            "reason": f"{content_type} was already emailed today ({today_iso}). Pass --force to send again.",
+            "content_type": content_type,
+            "run_date_iso": today_iso,
+        }
 
     if content_type == "news":
         candidates = collect_live_news()
@@ -666,20 +1018,34 @@ def run_autonomous_job(
     else:
         raise ValueError(f"Unsupported content_type: {content_type}")
 
-    dedup_result = filter_and_rank_candidates(content_type, candidates, limit=limit)
+    dedup_limit = 25 if content_type == "news" else limit
+    dedup_result = filter_and_rank_candidates(content_type, candidates, limit=dedup_limit)
     selected_items = dedup_result["selected"]
+    if content_type == "news":
+        selected_items = _enforce_source_diversity(selected_items, limit=10, max_per_source=3)
+    else:
+        selected_items = selected_items[:limit]
+
     if not selected_items:
         raise RuntimeError(f"No non-duplicate items available for {content_type}")
 
-    # Optional LLM caption refinement (via local Ollama gemma4:e2b or free Gemini key)
-    custom_caption = call_free_llm_json(
-        f"Write an Instagram caption and a LinkedIn post for SOLE (IGIT Sarang) Bits & Bytes ({content_type}). "
-        f"Items: {json.dumps(selected_items)}. "
-        "Rules: NO em dashes (—) or en dashes (–). NO AI buzzwords (delve, tapestry, testament, pivotal, vibrant, seamless). "
-        "Return JSON with keys: instagram, linkedin, hashtags (array of 10 strings)."
-    )
-    if not isinstance(custom_caption, dict):
-        custom_caption = None
+    # Optional LLM caption refinement (Instagram-only, strict plain text, no embedded hashtags)
+    use_llm = os.environ.get("ENABLE_LLM_CAPTIONS", "false").strip().lower() in ("1", "true", "yes")
+    custom_caption = None
+    if use_llm:
+        custom_caption = call_free_llm_json(
+            f"Write ONE concise Instagram caption for @sole_igit (SOLE, IGIT Sarang) Bits & Bytes ({content_type}). "
+            f"Items: {json.dumps(selected_items)}. "
+            "Strict rules: "
+            "1. NO em dashes or en dashes. "
+            "2. NO Markdown formatting (never use **bold** or backticks). "
+            "3. NO hashtags inside the 'instagram' text (put hashtags ONLY in the 'hashtags' array). "
+            "4. NO AI buzzwords (delve, tapestry, testament, pivotal, vibrant, seamless, crucial, fostering). "
+            "5. NO 'link in bio' filler. "
+            "Return JSON with keys: instagram (string), hashtags (array of 8 strings)."
+        )
+        if not isinstance(custom_caption, dict):
+            custom_caption = None
 
     contacts = load_contacts()
     sched_info = contacts.get("schedule", {}).get(content_type, {})
@@ -702,9 +1068,23 @@ def run_autonomous_job(
         captions=captions,
         contacts=contacts,
         slide_count=design_res["slide_count"],
+        carousel_pdf_name=design_res["carousel_pdf_name"],
     )
     email_html_path = pkg_dir / "email_body.html"
     email_html_path.write_text(email_html, encoding="utf-8")
+
+    email_txt = build_plain_text_email(
+        content_type=content_type,
+        content_title=content_title,
+        date_code=date_code,
+        selected_items=selected_items,
+        captions=captions,
+        contacts=contacts,
+        slide_count=design_res["slide_count"],
+        carousel_pdf_name=design_res["carousel_pdf_name"],
+    )
+    email_txt_path = pkg_dir / "email_body.txt"
+    email_txt_path.write_text(email_txt, encoding="utf-8")
 
     md_brief = build_markdown_brief(
         content_type=content_type,
@@ -720,11 +1100,12 @@ def run_autonomous_job(
     md_brief_path.write_text(md_brief, encoding="utf-8")
 
     manifest: Dict[str, Any] = {
+        "status": "ok",
         "package_id": slug,
         "content_type": content_type,
         "content_title": content_title,
         "date_code": date_code,
-        "run_date_iso": now_ist.strftime("%Y-%m-%d"),
+        "run_date_iso": today_iso,
         "subject": subject,
         "to_emails": to_emails,
         "cc_emails": cc_emails,
@@ -737,14 +1118,12 @@ def run_autonomous_job(
         "design_assets": design_res,
         "captions": captions,
         "email_html_path": str(email_html_path),
+        "email_txt_path": str(email_txt_path),
         "markdown_brief_path": str(md_brief_path),
     }
 
     if send_mail:
         manifest["email_delivery"] = send_email_smtp(manifest, to_override=to_override)
-    if publish_social:
-        manifest["instagram_publish"] = publish_to_instagram_graph_api(manifest)
-        manifest["linkedin_publish"] = publish_to_linkedin_api(manifest)
 
     manifest_path = pkg_dir / "package_manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -753,79 +1132,129 @@ def run_autonomous_job(
         commit_selected(content_type, selected_items, package_meta={
             "package_id": slug,
             "content_type": content_type,
-            "run_date_iso": now_ist.strftime("%Y-%m-%d"),
+            "run_date_iso": today_iso,
             "subject": subject,
             "manifest_path": str(manifest_path),
             "email_sent": manifest.get("email_delivery", {}).get("sent", False),
-            "social_published": publish_social,
+            "is_test_override": bool(to_override),
         })
 
     return manifest
 
 
-def already_ran_today(content_type: str, today_iso: str) -> bool:
-    history = load_history()
-    for pkg in history.get("packages", []):
-        if pkg.get("content_type") == content_type and pkg.get("run_date_iso") == today_iso:
-            return True
-        if pkg.get("content_type") == content_type and str(pkg.get("created_at", "")).startswith(today_iso):
-            return True
-    return False
+def _parse_schedule_time_ist(contacts: Dict[str, Any], content_type: str) -> Tuple[int, int]:
+    """Parses (hour, minute) from config/contacts.json cron_mail (default 18:00 IST)."""
+    cron_str = contacts.get("schedule", {}).get(content_type, {}).get("cron_mail", "")
+    m = re.search(r"(\d{1,2})\s+(\d{1,2})\s+\*\s+\*\s+\d", cron_str)
+    if m:
+        return int(m.group(2)), int(m.group(1))
+    return 18, 0
+
+
+class _HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self) -> None:
+        if self.path in ("/health", "/api/v1/health"):
+            body = json.dumps({"status": "healthy", "service": "SOLE Bits & Bytes Engine"}).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    def log_message(self, format: str, *args: Any) -> None:
+        return
 
 
 def daemon_loop(port: int = 8765) -> None:
     """
     24/7 Docker Daemon Mode:
-    - Exposes HTTP API on `0.0.0.0:8765` for `bits-bytes-n8n` or manual webhook calls.
-    - Runs an internal catch-up & cron loop every 15 minutes checking IST day-of-week:
-      * Tuesday (weekday 1)   -> Random Facts (Mail + Design + Caption)
-      * Wednesday (weekday 2) -> Random Vocabulary (Mail + Design + Caption) + Publish Tuesday's Fact
-      * Thursday (weekday 3)  -> Publish Wednesday's Vocabulary
-      * Saturday (weekday 5)  -> Weekly Top 10 News (Mail + Design + Caption)
-      * Sunday (weekday 6)    -> Publish Saturday's Top 10 News
+    - Exposes `/health` endpoint on `0.0.0.0:8765`.
+    - Internal scheduler is gated behind `ENABLE_DAEMON_SCHEDULER=true` to prevent
+      split-brain duplicate emails alongside GitHub Actions cron.
+    - When enabled, checks every 60 seconds and fires ONLY on the exact scheduled IST
+      day AND at or after the exact scheduled IST time (18:00 IST on Tue/Wed/Sat).
     """
-    from n8n_antigravity_bridge import BridgeHandler
-
-    server = HTTPServer(("0.0.0.0", port), BridgeHandler)
+    load_env_file()
+    server = HTTPServer(("0.0.0.0", port), _HealthHandler)
     t = threading.Thread(target=server.serve_forever, daemon=True)
     t.start()
-    print(f"[SOLE Bits & Bytes Daemon] HTTP API listening on http://0.0.0.0:{port}", flush=True)
+    print(f"[SOLE Bits & Bytes Daemon] Health endpoint listening on http://0.0.0.0:{port}/health", flush=True)
 
-    mail_day_map = {
-        1: "facts",  # Tuesday
-        2: "vocab",  # Wednesday
-        5: "news",   # Saturday
-    }
+    scheduler_enabled = os.environ.get("ENABLE_DAEMON_SCHEDULER", "false").strip().lower() in ("1", "true", "yes")
+    if not scheduler_enabled:
+        print(
+            "[SOLE Bits & Bytes Daemon] Internal cron disabled (ENABLE_DAEMON_SCHEDULER=false; "
+            "GitHub Actions handles offline Tue/Wed/Sat 18:00 IST sends).",
+            flush=True,
+        )
+
+    failed_attempts: Dict[Tuple[str, str], int] = {}
+    next_retry_at: Dict[Tuple[str, str], float] = {}
+    max_daily_failures = 3
 
     while True:
-        try:
-            now_ist = datetime.now(IST)
-            today_iso = now_ist.strftime("%Y-%m-%d")
-            wk = now_ist.weekday()
+        if scheduler_enabled:
+            try:
+                now_ist = datetime.now(IST)
+                today_iso = now_ist.strftime("%Y-%m-%d")
+                wk = now_ist.weekday()
 
-            # Check if today is a Mail + Design preparation day (or catch-up on boot)
-            if wk in mail_day_map:
-                ctype = mail_day_map[wk]
-                if not already_ran_today(ctype, today_iso):
-                    print(f"[SOLE Bits & Bytes Daemon] Running scheduled {ctype} job for {today_iso}...", flush=True)
-                    res = run_autonomous_job(ctype, send_mail=True, publish_social=False, commit_ledger=True)
-                    print(f"[SOLE Bits & Bytes Daemon] Completed {res['package_id']}", flush=True)
-        except Exception as exc:
-            print(f"[SOLE Bits & Bytes Daemon] Error in check loop: {exc}", file=sys.stderr, flush=True)
+                if wk in MAIL_DAY_MAP:
+                    ctype = MAIL_DAY_MAP[wk]
+                    day_key = (ctype, today_iso)
+                    if failed_attempts.get(day_key, 0) >= max_daily_failures:
+                        time.sleep(60)
+                        continue
+                    if time.time() < next_retry_at.get(day_key, 0.0):
+                        time.sleep(60)
+                        continue
 
-        time.sleep(900)
+                    contacts = load_contacts()
+                    target_hour, target_minute = _parse_schedule_time_ist(contacts, ctype)
+                    if (now_ist.hour, now_ist.minute) >= (target_hour, target_minute):
+                        if not already_ran_today(ctype, today_iso):
+                            print(
+                                f"[SOLE Bits & Bytes Daemon] Triggering scheduled {ctype} job at "
+                                f"{now_ist.strftime('%Y-%m-%d %H:%M IST')}...",
+                                flush=True,
+                            )
+                            res = run_autonomous_job(ctype, send_mail=True, commit_ledger=True)
+                            failed_attempts.pop(day_key, None)
+                            next_retry_at.pop(day_key, None)
+                            print(f"[SOLE Bits & Bytes Daemon] Completed {res.get('package_id', res.get('status'))}", flush=True)
+            except Exception as exc:
+                now_ist = datetime.now(IST)
+                today_iso = now_ist.strftime("%Y-%m-%d")
+                wk = now_ist.weekday()
+                if wk in MAIL_DAY_MAP:
+                    day_key = (MAIL_DAY_MAP[wk], today_iso)
+                    attempts = failed_attempts.get(day_key, 0) + 1
+                    failed_attempts[day_key] = attempts
+                    backoff_sec = 900 * attempts  # 15m, 30m, then stop for the day
+                    next_retry_at[day_key] = time.time() + backoff_sec
+                    print(
+                        f"[SOLE Bits & Bytes Daemon] Error in check loop (attempt {attempts}/{max_daily_failures}): {exc}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                else:
+                    print(f"[SOLE Bits & Bytes Daemon] Error in check loop: {exc}", file=sys.stderr, flush=True)
+
+        time.sleep(60)
 
 
 def run_combined_sample_email(
     send_mail: bool = True,
-    commit_ledger: bool = True,
+    commit_ledger: bool = False,
     to_override: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Generates ONE single inbox-friendly email containing fresh, non-repeated samples
-    of all three post types (Weekly News Highlights, Random Fact, and Random Vocabulary)
-    with Instagram (@sole_igit) captions only (no LinkedIn, no /GHOST mention),
-    the HD SOLE & IGIT Sarang logos in the signature, and the 3 carousel PDFs attached.
+    Generates ONE single email using the exact same canonical HTML blocks and signature
+    as regular scheduled emails, containing fresh editions of News, Fact, and Vocabulary
+    with dated Carousel PDFs attached.
     """
     load_env_file()
     now_ist = datetime.now(IST)
@@ -834,110 +1263,105 @@ def run_combined_sample_email(
     sender = contacts.get("sender", {})
     to_emails, cc_emails = resolve_recipients(contacts)
 
-    news_pkg = run_autonomous_job("news", send_mail=False, publish_social=False, commit_ledger=commit_ledger, date_code=date_code)
-    fact_pkg = run_autonomous_job("facts", send_mail=False, publish_social=False, commit_ledger=commit_ledger, date_code=date_code)
-    vocab_pkg = run_autonomous_job("vocab", send_mail=False, publish_social=False, commit_ledger=commit_ledger, date_code=date_code)
+    news_pkg = run_autonomous_job("news", send_mail=False, commit_ledger=False, date_code=date_code, force=True)
+    fact_pkg = run_autonomous_job("facts", send_mail=False, commit_ledger=False, date_code=date_code, force=True)
+    vocab_pkg = run_autonomous_job("vocab", send_mail=False, commit_ledger=False, date_code=date_code, force=True)
 
-    # Build News HTML Table
-    news_rows = []
-    for idx, item in enumerate(news_pkg["selected_items"], 1):
-        bg = "#ffffff" if idx % 2 == 1 else "#f8fafc"
-        news_rows.append(
-            f'<tr style="background:{bg};">'
-            f'<td style="padding:10px;border:1px solid #cbd5e1;text-align:center;font-weight:700;color:#0887A8;">#{idx:02d}</td>'
-            f'<td style="padding:10px;border:1px solid #cbd5e1;font-weight:600;color:#0f172a;">{html_lib.escape(item.get("headline", ""))}</td>'
-            f'<td style="padding:10px;border:1px solid #cbd5e1;color:#334155;font-size:13.5px;">{html_lib.escape(item.get("summary", ""))}</td>'
-            f'<td style="padding:10px;border:1px solid #cbd5e1;text-align:center;"><a href="{html_lib.escape(item.get("url", "#"))}" style="color:#0887A8;">{html_lib.escape(item.get("source", "Link"))}</a></td>'
-            f'</tr>'
-        )
-    news_table = (
-        '<table style="width:100%;border-collapse:collapse;font-size:13.5px;margin:10px 0 16px 0;">'
-        '<thead><tr style="background:#0f172a;color:#ffffff;">'
-        '<th style="padding:10px;border:1px solid #0f172a;width:48px;">#</th>'
-        '<th style="padding:10px;border:1px solid #0f172a;text-align:left;width:30%;">Headline</th>'
-        '<th style="padding:10px;border:1px solid #0f172a;text-align:left;">Summary</th>'
-        '<th style="padding:10px;border:1px solid #0f172a;width:110px;">Source</th>'
-        f'</tr></thead><tbody>{"".join(news_rows)}</tbody></table>'
-    )
+    news_pdf_name = news_pkg["design_assets"]["carousel_pdf_name"]
+    fact_pdf_name = fact_pkg["design_assets"]["carousel_pdf_name"]
+    vocab_pdf_name = vocab_pkg["design_assets"]["carousel_pdf_name"]
 
-    fact_item = fact_pkg["selected_items"][0]
-    vocab_item = vocab_pkg["selected_items"][0]
+    news_block = render_content_block_html("news", news_pkg["selected_items"], heading=f"1. Weekly News Highlights (Attached: {news_pdf_name})")
+    fact_block = render_content_block_html("facts", fact_pkg["selected_items"], heading=f"2. Random Fact of the Week (Attached: {fact_pdf_name})")
+    vocab_block = render_content_block_html("vocab", vocab_pkg["selected_items"], heading=f"3. Random Vocabulary / Thesaurus (Attached: {vocab_pdf_name})")
 
     news_cap = html_lib.escape(news_pkg["captions"]["instagram_caption"]).replace("\n", "<br>")
     fact_cap = html_lib.escape(fact_pkg["captions"]["instagram_caption"]).replace("\n", "<br>")
     vocab_cap = html_lib.escape(vocab_pkg["captions"]["instagram_caption"]).replace("\n", "<br>")
+    sig_html = render_signature_html(sender)
 
     combined_html = f"""<!DOCTYPE html>
 <html>
 <body style="font-family:Arial,Helvetica,sans-serif;color:#1e293b;line-height:1.6;max-width:820px;margin:0 auto;padding:12px;">
   <p style="margin-top:0;">Hi Social Media &amp; Design Team Leads,</p>
-  <p>Here is a combined sample containing fresh, non-repeated editions of all three <b>Bits &amp; Bytes</b> post types (<b>Weekly News Highlights</b>, <b>Random Fact</b>, and <b>Random Vocabulary / Thesaurus</b>) along with their ready-to-post 1080&times;1350 carousel designs attached as PDFs and Instagram captions for <b>@sole_igit</b>.</p>
-  <p>Feel free to use the attached designs directly or create a new design from this content.</p>
+  <p>Please find below a combined sample of all three <b>Bits &amp; Bytes</b> post types (<b>Weekly News Highlights</b>, <b>Random Fact</b>, and <b>Random Vocabulary / Thesaurus</b>) for <b>{html_lib.escape(date_code)}</b>, with Instagram captions for <b>@sole_igit</b> and dated 1080&times;1350 carousel PDFs attached. You are free to use the attached designs directly or create a new design from this content.</p>
 
   <hr style="border:none;border-top:1px solid #cbd5e1;margin:20px 0;">
-  <h3 style="color:#0f172a;margin:0 0 8px 0;">1. Weekly News Highlights (Attached: Weekly_News_Highlights.pdf)</h3>
-  {news_table}
-  <p style="margin:8px 0 4px 0;"><b>Instagram Caption (@sole_igit):</b></p>
-  <div style="background:#f8fafc;border-left:3px solid #0887A8;padding:12px 14px;font-size:13.5px;margin-bottom:20px;">{news_cap}</div>
+  {news_block}
+  <p style="margin:8px 0 4px 0;"><b>Instagram Caption &amp; Hashtags (@sole_igit):</b></p>
+  <div style="background:#f8fafc;border-left:3px solid #0887A8;padding:14px 16px;font-size:14px;line-height:1.55;margin-bottom:24px;">{news_cap}</div>
 
   <hr style="border:none;border-top:1px solid #cbd5e1;margin:20px 0;">
-  <h3 style="color:#0f172a;margin:0 0 8px 0;">2. Random Fact of the Week (Attached: Random_Fact.pdf)</h3>
-  <p style="margin:6px 0;"><b>{html_lib.escape(fact_item.get("title", ""))}</b></p>
-  <p style="margin:6px 0;">{html_lib.escape(fact_item.get("fact", ""))}</p>
-  <p style="margin:6px 0;color:#475569;">{html_lib.escape(fact_item.get("context", ""))}</p>
-  <p style="margin:8px 0 4px 0;"><b>Instagram Caption (@sole_igit):</b></p>
-  <div style="background:#f8fafc;border-left:3px solid #0887A8;padding:12px 14px;font-size:13.5px;margin-bottom:20px;">{fact_cap}</div>
+  {fact_block}
+  <p style="margin:8px 0 4px 0;"><b>Instagram Caption &amp; Hashtags (@sole_igit):</b></p>
+  <div style="background:#f8fafc;border-left:3px solid #0887A8;padding:14px 16px;font-size:14px;line-height:1.55;margin-bottom:24px;">{fact_cap}</div>
 
   <hr style="border:none;border-top:1px solid #cbd5e1;margin:20px 0;">
-  <h3 style="color:#0f172a;margin:0 0 8px 0;">3. Random Vocabulary / Thesaurus (Attached: Random_Vocabulary.pdf)</h3>
-  <p style="margin:6px 0;"><b>{html_lib.escape(vocab_item.get("word", ""))}</b> ({html_lib.escape(vocab_item.get("pronunciation", ""))} &bull; {html_lib.escape(vocab_item.get("part_of_speech", ""))})</p>
-  <p style="margin:6px 0;"><b>Definition:</b> {html_lib.escape(vocab_item.get("definition", ""))}</p>
-  <p style="margin:6px 0;"><b>Example:</b> &ldquo;{html_lib.escape(vocab_item.get("example", ""))}&rdquo;</p>
-  <p style="margin:6px 0;"><b>Synonyms:</b> {html_lib.escape(", ".join(vocab_item.get("synonyms", [])))} &nbsp;|&nbsp; <b>Antonyms:</b> {html_lib.escape(", ".join(vocab_item.get("antonyms", [])))}</p>
-  <p style="margin:8px 0 4px 0;"><b>Instagram Caption (@sole_igit):</b></p>
-  <div style="background:#f8fafc;border-left:3px solid #0887A8;padding:12px 14px;font-size:13.5px;margin-bottom:24px;">{vocab_cap}</div>
+  {vocab_block}
+  <p style="margin:8px 0 4px 0;"><b>Instagram Caption &amp; Hashtags (@sole_igit):</b></p>
+  <div style="background:#f8fafc;border-left:3px solid #0887A8;padding:14px 16px;font-size:14px;line-height:1.55;margin-bottom:26px;">{vocab_cap}</div>
 
-  <hr style="border:none;border-top:1px solid #cbd5e1;margin:24px 0 16px 0;">
-  <div style="font-size:13.5px;color:#334155;line-height:1.55;">
-    <b>{html_lib.escape(sender.get("name", "Yash Agrawall"))}</b><br>
-    {html_lib.escape(sender.get("batch_branch", "43rd CSE"))}<br>
-    {html_lib.escape(sender.get("role", "Bits & Bytes SOLE"))}<br>
-    {html_lib.escape(sender.get("college", "IGIT Sarang"))}<br>
-    Ph. No. {html_lib.escape(sender.get("phone", "+91 XXXXX XXXXX"))}<br>
-    Instagram Handle : <a href="{html_lib.escape(sender.get("instagram_url", "https://www.instagram.com/yashagrawall/"))}" style="color:#0887A8;">{html_lib.escape(sender.get("instagram_handle", "@yashagrawall"))}</a><br>
-    LinkedIn Handle : <a href="{html_lib.escape(sender.get("linkedin_url", "https://www.linkedin.com/in/yash-agrawall"))}" style="color:#0887A8;">{html_lib.escape(sender.get("linkedin_handle", "yash-agrawall"))}</a><br>
-    <div style="margin-top:12px;">
-      <img src="cid:igit_logo" alt="IGIT Sarang Logo" style="height:64px;width:auto;vertical-align:middle;margin-right:10px;">
-      <img src="cid:sole_logo" alt="SOLE Logo" style="height:60px;width:auto;vertical-align:middle;">
-    </div>
-  </div>
+{sig_html}
 </body>
 </html>"""
 
+    fact_item = fact_pkg["selected_items"][0]
+    vocab_item = vocab_pkg["selected_items"][0]
     plain_lines = [
         "Hi Social Media & Design Team Leads,",
         "",
-        f"Here is a combined sample containing fresh editions of all three Bits & Bytes post types ({date_code}):",
+        f"Combined Bits & Bytes sample for {date_code} (attached: {news_pdf_name}, {fact_pdf_name}, {vocab_pdf_name}):",
         "",
-        "1. WEEKLY NEWS HIGHLIGHTS (see attached Weekly_News_Highlights.pdf)",
+        f"1. WEEKLY NEWS HIGHLIGHTS (Attached: {news_pdf_name})",
+        "-" * 60,
+    ]
+    for idx, item in enumerate(news_pkg["selected_items"], 1):
+        plain_lines.append(f"#{idx:02d} [{item.get('category', 'General')}] {item.get('headline', '')}")
+        plain_lines.append(f"    {item.get('summary', '')}")
+        plain_lines.append(f"    Source: {item.get('source', 'Source')} ({item.get('url', '')})")
+    plain_lines.extend([
+        "",
+        "Instagram Caption (@sole_igit):",
         news_pkg["captions"]["instagram_caption"],
         "",
-        "2. RANDOM FACT OF THE WEEK (see attached Random_Fact.pdf)",
-        f"{fact_item.get('title', '')}: {fact_item.get('fact', '')}",
+        f"2. RANDOM FACT OF THE WEEK (Attached: {fact_pdf_name})",
+        "-" * 60,
+        f"Title: {fact_item.get('title', '')}",
+        f"Fact: {fact_item.get('fact', '')}",
+        f"Context: {fact_item.get('context', '')}",
+        f"Primary Source: {fact_item.get('source', 'Verified')} ({fact_item.get('url', '')})",
+        "",
+        "Instagram Caption (@sole_igit):",
         fact_pkg["captions"]["instagram_caption"],
         "",
-        "3. RANDOM VOCABULARY / THESAURUS (see attached Random_Vocabulary.pdf)",
-        f"{vocab_item.get('word', '')} ({vocab_item.get('part_of_speech', '')}): {vocab_item.get('definition', '')}",
+        f"3. RANDOM VOCABULARY / THESAURUS (Attached: {vocab_pdf_name})",
+        "-" * 60,
+        f"Word: {vocab_item.get('word', '')} ({vocab_item.get('pronunciation', '')} | {vocab_item.get('part_of_speech', '')})",
+        f"Definition: {vocab_item.get('definition', '')}",
+        f"Example: \"{vocab_item.get('example', '')}\"",
+        f"Synonyms: {', '.join(vocab_item.get('synonyms', []))}",
+        f"Antonyms: {', '.join(vocab_item.get('antonyms', []))}",
+        f"Etymology: {vocab_item.get('etymology', '')}",
+        "",
+        "Instagram Caption (@sole_igit):",
         vocab_pkg["captions"]["instagram_caption"],
         "",
         "--",
-        "Yash Agrawall | 43rd CSE | Bits & Bytes SOLE | IGIT Sarang | +91 XXXXX XXXXX",
-    ]
+        sender.get("name", "SOLE Bits & Bytes Maintainer"),
+        sender.get("batch_branch", ""),
+        sender.get("role", "Bits & Bytes SOLE"),
+        sender.get("college", "IGIT Sarang"),
+        f"Ph. No. {sender.get('phone', '')}",
+        f"Instagram Handle : {sender.get('instagram_handle', '@sole_igit')} ({sender.get('instagram_url', 'https://www.instagram.com/sole_igit/')})",
+        f"LinkedIn Handle : {sender.get('linkedin_handle', '')} ({sender.get('linkedin_url', 'https://www.linkedin.com/')})",
+    ])
 
     out_dir = OUTPUT_ROOT / f"{date_code}_combined_sample"
     out_dir.mkdir(parents=True, exist_ok=True)
     html_path = out_dir / "email_body.html"
     html_path.write_text(combined_html, encoding="utf-8")
+    txt_path = out_dir / "email_body.txt"
+    txt_path.write_text("\n".join(plain_lines), encoding="utf-8")
 
     subject = f"[{date_code}] : Bits & Bytes Social Media Post : Complete Sample (News, Fact & Vocabulary)"
     manifest = {
@@ -946,6 +1370,7 @@ def run_combined_sample_email(
         "to_emails": to_emails,
         "cc_emails": cc_emails,
         "email_html_path": str(html_path),
+        "email_txt_path": str(txt_path),
         "news_word_fact_summary": {
             "news_top1": news_pkg["selected_items"][0].get("headline"),
             "fact_title": fact_item.get("title"),
@@ -954,9 +1379,9 @@ def run_combined_sample_email(
     }
 
     custom_attachments = [
-        ("Weekly_News_Highlights.pdf", Path(news_pkg["design_assets"]["carousel_pdf_path"])),
-        ("Random_Fact.pdf", Path(fact_pkg["design_assets"]["carousel_pdf_path"])),
-        ("Random_Vocabulary.pdf", Path(vocab_pkg["design_assets"]["carousel_pdf_path"])),
+        (news_pdf_name, Path(news_pkg["design_assets"]["carousel_pdf_path"])),
+        (fact_pdf_name, Path(fact_pkg["design_assets"]["carousel_pdf_path"])),
+        (vocab_pdf_name, Path(vocab_pkg["design_assets"]["carousel_pdf_path"])),
     ]
 
     if send_mail:
@@ -966,17 +1391,32 @@ def run_combined_sample_email(
             custom_attachments=custom_attachments,
             plain_text_body="\n".join(plain_lines),
         )
+
+    if commit_ledger:
+        today_iso = now_ist.strftime("%Y-%m-%d")
+        sent_ok = manifest.get("email_delivery", {}).get("sent", False)
+        for ctype, pkg in [("news", news_pkg), ("facts", fact_pkg), ("vocab", vocab_pkg)]:
+            commit_selected(ctype, pkg["selected_items"], package_meta={
+                "package_id": pkg["package_id"],
+                "content_type": ctype,
+                "run_date_iso": today_iso,
+                "subject": subject,
+                "manifest_path": str(html_path),
+                "email_sent": sent_ok,
+                "is_test_override": bool(to_override),
+            })
+
     return manifest
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Standalone Zero-Subscription Bits & Bytes Automation Engine")
     parser.add_argument("--type", choices=["news", "facts", "vocab", "auto", "combined-sample"], default="auto")
-    parser.add_argument("--send-mail", action="store_true", help="Send HTML email with slide attachments via Gmail SMTP")
-    parser.add_argument("--publish-social", action="store_true", help="Publish directly to Instagram Graph API & LinkedIn API")
+    parser.add_argument("--send-mail", action="store_true", help="Send HTML email with slide & PDF attachments via Gmail SMTP")
     parser.add_argument("--no-commit", action="store_true", help="Dry run without committing to published_history.json")
+    parser.add_argument("--force", action="store_true", help="Bypass same-day idempotency guard and send again")
     parser.add_argument("--to-override", default=None, help="Send email ONLY to this comma-separated address list (skips team To/Cc)")
-    parser.add_argument("--daemon", action="store_true", help="Run 24/7 inside Docker with catch-up scheduler + HTTP API")
+    parser.add_argument("--daemon", action="store_true", help="Run 24/7 inside Docker with HTTP API (and optional exact-time scheduler)")
     parser.add_argument("--port", type=int, default=8765)
     args = parser.parse_args()
 
@@ -987,7 +1427,7 @@ def main() -> None:
     if args.type == "combined-sample":
         res = run_combined_sample_email(
             send_mail=args.send_mail,
-            commit_ledger=not args.no_commit,
+            commit_ledger=False,
             to_override=args.to_override,
         )
         print(json.dumps({
@@ -1001,29 +1441,34 @@ def main() -> None:
 
     ctype = args.type
     if ctype == "auto":
-        wk = datetime.now(IST).weekday()
-        if wk == 1:
-            ctype = "facts"
-        elif wk == 2:
-            ctype = "vocab"
-        else:
-            ctype = "news"
+        now_ist = datetime.now(IST)
+        wk = now_ist.weekday()
+        if wk not in MAIL_DAY_MAP:
+            print(json.dumps({
+                "status": "skipped",
+                "reason": f"Today ({now_ist.strftime('%A')}, {now_ist.strftime('%Y-%m-%d IST')}) is not a scheduled mail day (Tue=facts, Wed=vocab, Sat=news).",
+            }, indent=2))
+            return
+        ctype = MAIL_DAY_MAP[wk]
 
     res = run_autonomous_job(
         content_type=ctype,
         send_mail=args.send_mail,
-        publish_social=args.publish_social,
         commit_ledger=not args.no_commit,
         to_override=args.to_override,
+        force=args.force,
     )
+    if res.get("status") == "skipped":
+        print(json.dumps(res, indent=2))
+        return
+
     print(json.dumps({
         "status": "ok",
         "package_id": res["package_id"],
         "subject": res["subject"],
         "slide_count": res["design_assets"]["slide_count"],
+        "carousel_pdf": res["design_assets"]["carousel_pdf_name"],
         "email_delivery": res.get("email_delivery"),
-        "instagram_publish": res.get("instagram_publish"),
-        "linkedin_publish": res.get("linkedin_publish"),
     }, indent=2))
 
 

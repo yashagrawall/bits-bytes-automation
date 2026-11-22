@@ -8,8 +8,10 @@ ledgers to guarantee no News Highlight, Random Fact, or Vocabulary Word is ever 
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -71,11 +73,24 @@ def load_history() -> Dict[str, Any]:
         return json.load(f)
 
 
+def _atomic_write_text(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=str(path.parent))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(content)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_name, path)
+    except Exception:
+        if os.path.exists(tmp_name):
+            os.unlink(tmp_name)
+        raise
+
+
 def save_history(data: Dict[str, Any]) -> None:
     data["metadata"]["last_updated"] = datetime.now().astimezone().isoformat()
-    HISTORY_JSON.parent.mkdir(parents=True, exist_ok=True)
-    with open(HISTORY_JSON, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+    _atomic_write_text(HISTORY_JSON, json.dumps(data, indent=2, ensure_ascii=False))
     sync_txt_mirror(data)
 
 
@@ -108,8 +123,7 @@ def sync_txt_mirror(data: Dict[str, Any]) -> None:
             f"({item.get('part_of_speech', '')}): {item.get('definition', '')} | Hash: {item.get('hash', '')}"
         )
     lines.append("")
-    with open(HISTORY_TXT, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines))
+    _atomic_write_text(HISTORY_TXT, "\n".join(lines))
 
 
 def is_duplicate_news(candidate: Dict[str, Any], existing_news: List[Dict[str, Any]]) -> Tuple[bool, str]:

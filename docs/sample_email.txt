@@ -1,0 +1,49 @@
+From:    [Sender Name] <sender@example.com>
+To:      social-lead-1@example.com, social-lead-2@example.com, design-lead-1@example.com, design-lead-2@example.com
+Cc:      bb-rep-1@example.com, bb-rep-2@example.com, lr-1@example.com, lr-2@example.com
+Subject: [2026-Nov-W4-Tuesday] : Bits & Bytes Social Media Post : Random Facts
+Attach:  slide_01.jpg, slide_02.jpg, slide_03.jpg, slide_04.jpg, 2026-Nov-W4-Tuesday_Random_Fact.pdf
+========================================================================
+
+Hi Social Media & Design Team Leads,
+
+Please find below the curated Bits & Bytes content, Instagram caption for @sole_igit, and attached 1080x1350 design slides for Random Facts (2026-Nov-W4-Tuesday). You are free to use the attached design directly or create a new design from this content.
+
+1. CURATED RANDOM FACT OF THE WEEK
+------------------------------------------------------------
+Category: LITERATURE & COMPUTING HISTORY
+Title: The First Known Computer Algorithm Was Published With Literary Footnotes Longer Than the Paper Itself
+Fact: In 1843, Ada Lovelace translated Luigi Menabrea's French article on Charles Babbage's Analytical Engine and appended seven 'Notes' labeled A through G. Her footnotes were nearly three times longer than the original engineering paper and contained Note G, the first published algorithm for computing Bernoulli numbers.
+Context: Lovelace called her approach 'poetical science', blending mathematical logic with literary imagination. She also predicted that computing machines could one day compose music and manipulate symbols beyond pure arithmetic.
+Primary Source: Bodleian Libraries, University of Oxford (https://bodleian.ox.ac.uk/)
+Scores: Relevance 9.6/10 | Popularity 9.4/10
+
+2. ATTACHED DESIGN FILES
+------------------------------------------------------------
+- 4 Ready-to-Post 1080x1350 Slides (slide_01.jpg - slide_04.jpg) + 2026-Nov-W4-Tuesday_Random_Fact.pdf
+- Feel free to post the attached design directly on @sole_igit, or use the content above to create a new design.
+
+3. INSTAGRAM CAPTION & HASHTAGS (@sole_igit)
+------------------------------------------------------------
+Wait... is this actually real? (LITERATURE & COMPUTING HISTORY)
+
+Today's mystery: The First Known Computer Algorithm Was Published With Literary Footnotes Longer Than the Paper Itself.
+Most people only know half the story, but the plot twist on Slide 3 changes everything.
+
+Verified Source: Bodleian Libraries, University of Oxford
+
+Swipe to the last slide and comment A, B, or C: did you know this before today?
+
+.
+.
+.
+#IGITSarang #SOLE #SOLEIGIT #BitsAndBytes #LiteraryClub #IGIT #OdishaColleges #CampusLife #DidYouKnow #FactOfTheWeek #RandomFacts #Trivia #ScienceFacts #HistoryFacts #CuriousMinds #LearnSomethingNew
+
+--
+[Sender Name]
+43rd CSE
+Bits & Bytes SOLE
+IGIT Sarang
+Ph. No. +91 XXXXX XXXXX
+Instagram Handle : @sender_handle (https://www.instagram.com/sole_igit/)
+LinkedIn Handle : sender-profile (https://www.linkedin.com/)

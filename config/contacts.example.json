@@ -1,0 +1,86 @@
+{
+  "organization": {
+    "college": "IGIT Sarang (Indira Gandhi Institute of Technology, Sarang)",
+    "club": "SOLE (Society Of Literary Enthusiasts)",
+    "sub_wing": "Bits & Bytes",
+    "instagram_handle": "@sole_igit",
+    "instagram_url": "https://www.instagram.com/sole_igit/"
+  },
+  "sender": {
+    "name": "SOLE Bits & Bytes Maintainer",
+    "batch_branch": "CSE",
+    "role": "Bits & Bytes SOLE",
+    "college": "IGIT Sarang",
+    "phone": "+91 XXXXX XXXXX",
+    "email": "sender@example.com",
+    "instagram_handle": "@sole_igit",
+    "instagram_url": "https://www.instagram.com/sole_igit/",
+    "linkedin_handle": "sole-igit",
+    "linkedin_url": "https://www.linkedin.com/"
+  },
+  "recipients": {
+    "to": {
+      "social_media_leads": [
+        {
+          "name": "Social Media Lead 1",
+          "batch": "",
+          "branch": "",
+          "phone": "",
+          "email": "social-lead-1@example.com"
+        }
+      ],
+      "design_leads": [
+        {
+          "name": "Design Lead 1",
+          "batch": "",
+          "branch": "",
+          "phone": "",
+          "email": "design-lead-1@example.com"
+        }
+      ]
+    },
+    "cc": {
+      "bits_bytes_reps": [
+        {
+          "name": "Bits & Bytes Rep 1",
+          "batch": "",
+          "branch": "",
+          "phone": "",
+          "email": "bb-rep-1@example.com"
+        }
+      ],
+      "lrs": [
+        {
+          "name": "Literary Representative 1",
+          "batch": "",
+          "branch": "",
+          "phone": "",
+          "email": "lr-1@example.com"
+        }
+      ]
+    }
+  },
+  "schedule": {
+    "news": {
+      "content_type": "Weekly Top 10 News Highlights",
+      "mail_day": "Saturday",
+      "post_day": "Sunday",
+      "cron_mail": "CRON_TZ=Asia/Kolkata 0 18 * * 6",
+      "cron_post": "CRON_TZ=Asia/Kolkata 0 10 * * 0"
+    },
+    "facts": {
+      "content_type": "Random Facts",
+      "mail_day": "Tuesday",
+      "post_day": "Wednesday",
+      "cron_mail": "CRON_TZ=Asia/Kolkata 0 18 * * 2",
+      "cron_post": "CRON_TZ=Asia/Kolkata 0 10 * * 3"
+    },
+    "vocab": {
+      "content_type": "Random Vocabulary / Thesaurus",
+      "mail_day": "Wednesday",
+      "post_day": "Thursday",
+      "cron_mail": "CRON_TZ=Asia/Kolkata 0 18 * * 3",
+      "cron_post": "CRON_TZ=Asia/Kolkata 0 10 * * 4"
+    }
+  }
+}

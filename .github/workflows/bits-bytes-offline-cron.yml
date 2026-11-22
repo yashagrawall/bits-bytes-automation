@@ -20,9 +20,18 @@ on:
           - news
           - facts
           - vocab
+      force:
+        description: "Force send even if already sent today"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
+
+concurrency:
+  group: bits-bytes-offline-cron
+  cancel-in-progress: false
 
 jobs:
   curate-design-and-email:
@@ -31,6 +40,7 @@ jobs:
       TZ: Asia/Kolkata
       GMAIL_USER: ${{ secrets.GMAIL_USER }}
       GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      CONTACTS_JSON: ${{ secrets.CONTACTS_JSON }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
     steps:
       - name: Checkout repository & content history
@@ -42,7 +52,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends fonts-montserrat fonts-crosextra-caladea fonts-liberation2 fontconfig
           sudo mkdir -p /usr/share/fonts/julietaula-montserrat-fonts /usr/share/fonts/google-crosextra-caladea-fonts /usr/share/fonts/liberation-serif-fonts
           find /usr/share/fonts -iname "Montserrat-*.otf" -o -iname "Montserrat-*.ttf" | while read -r f; do
-            sudo ln -sf "$f" "/usr/share/fonts/julietaula-montserrat-fonts/$(basename "${f%.*}").otf"
+            sudo ln -sf "$f" "/usr/share/fonts/julietaula-montserrat-fonts/$(basename "$f")"
           done
           find /usr/share/fonts -iname "Caladea-*.ttf" | while read -r f; do
             sudo ln -sf "$f" "/usr/share/fonts/google-crosextra-caladea-fonts/$(basename "$f")"
@@ -59,10 +69,20 @@ jobs:
 
       - name: Run Standalone Bits & Bytes Engine (Curate + Deduplicate + Render 1080x1350 Designs + /GHOST Caption + Send Email)
         run: |
-          CTYPE="${{ github.event.inputs.content_type || 'auto' }}"
-          python3 scripts/standalone_engine.py --type "$CTYPE" --send-mail
+          case "${{ github.event.schedule }}" in
+            "30 12 * * 2") CTYPE="facts" ;;
+            "30 12 * * 3") CTYPE="vocab" ;;
+            "30 12 * * 6") CTYPE="news" ;;
+            *) CTYPE="${{ github.event.inputs.content_type || 'auto' }}" ;;
+          esac
+          FORCE_FLAG=""
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then
+            FORCE_FLAG="--force"
+          fi
+          echo "Resolved content_type=$CTYPE (schedule='${{ github.event.schedule }}', force='$FORCE_FLAG')"
+          python3 scripts/standalone_engine.py --type "$CTYPE" --send-mail $FORCE_FLAG
 
-      - name: Upload Generated 1080x1350 PNGs & PDF as Workflow Artifact
+      - name: Upload Generated 1080x1350 Slides & Dated Carousel PDF as Workflow Artifact
         uses: actions/upload-artifact@v4
         with:
           name: bits-bytes-social-package-${{ github.run_number }}
@@ -71,9 +91,10 @@ jobs:
       - name: Commit Updated Deduplication History (published_history.json & .txt)
         run: |
           git config user.name "SOLE Bits & Bytes Bot"
-          git config user.email "sender@example.com"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/published_history.json data/published_history.txt
           if ! git diff --cached --quiet; then
             git commit -m "chore(history): record published Bits & Bytes content [skip ci]"
+            git pull --rebase origin main
             git push
           fi

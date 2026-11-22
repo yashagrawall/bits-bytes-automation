@@ -1,0 +1,23 @@
+# Secrets & local environment
+.env
+.env.*
+!.env.example
+config/contacts.json
+
+# Git & CI metadata
+.git
+.gitignore
+.github
+
+# Ephemeral outputs & caches
+output/
+peer_review_samples/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Docs & non-runtime files
+docs/
+*.md
+LICENSE
