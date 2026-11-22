@@ -670,8 +670,24 @@ def _xml_child_text(elem: ET.Element, *names: str) -> str:
     return ""
 
 
+def _load_seed_news_candidates() -> List[Dict[str, Any]]:
+    """Loads fallback seed news candidates with scores capped below live RSS items."""
+    seed_path = BASE_DIR / "data" / "sample_candidates_news.json"
+    if not seed_path.exists():
+        return []
+    seed_data = json.loads(seed_path.read_text(encoding="utf-8"))
+    seed_list = seed_data if isinstance(seed_data, list) else seed_data.get("candidates", [])
+    fallback_items: List[Dict[str, Any]] = []
+    for item in seed_list:
+        fallback_item = dict(item)
+        fallback_item["relevance_score"] = min(float(fallback_item.get("relevance_score", 7.8)), 7.8)
+        fallback_item["popularity_score"] = min(float(fallback_item.get("popularity_score", 7.6)), 7.6)
+        fallback_items.append(fallback_item)
+    return fallback_items
+
+
 def collect_live_news() -> List[Dict[str, Any]]:
-    """Fetches real-time news from free RSS/RDF/Atom feeds with quality filtering and seed fallback."""
+    """Fetches real-time news from free RSS/RDF/Atom feeds with quality filtering."""
     candidates: List[Dict[str, Any]] = []
     headers = {"User-Agent": "Mozilla/5.0 (compatible; SOLE-BitsAndBytes-Bot/2.1; +https://igitsarang.ac.in)"}
 
@@ -707,19 +723,6 @@ def collect_live_news() -> List[Dict[str, Any]]:
         except Exception:
             continue
 
-    # Only merge fallback seed candidates when live RSS is unavailable/sparse,
-    # and cap fallback scores below live RSS items so live stories always win.
-    if len(candidates) < 10:
-        seed_path = BASE_DIR / "data" / "sample_candidates_news.json"
-        if seed_path.exists():
-            seed_data = json.loads(seed_path.read_text(encoding="utf-8"))
-            seed_list = seed_data if isinstance(seed_data, list) else seed_data.get("candidates", [])
-            for item in seed_list:
-                fallback_item = dict(item)
-                fallback_item["relevance_score"] = min(float(fallback_item.get("relevance_score", 7.8)), 7.8)
-                fallback_item["popularity_score"] = min(float(fallback_item.get("popularity_score", 7.6)), 7.6)
-                candidates.append(fallback_item)
-
     return candidates
 
 
@@ -730,7 +733,13 @@ def collect_live_facts() -> List[Dict[str, Any]]:
     """
     candidates: List[Dict[str, Any]] = [dict(f) for f in FACTS_ARCHIVE]
     headers = {"User-Agent": "SOLE-BitsAndBytes-IGITSarang/2.1 (+https://github.com/yashagrawall/bits-bytes-automation)"}
-    skip_wiki_terms = ("footballer", "baseball", "basketball", "politician", "municipality", "village in", "album by", "disambiguation", "chemical compound used in")
+    skip_wiki_terms = (
+        "footballer", "baseball", "basketball", "cricketer", "ice hockey", "rugby",
+        "politician", "municipality", "village in", "census-designated place",
+        "unincorporated community", "album by", "television series", "video game",
+        "actor", "actress", "singer", "species of moth", "species of beetle",
+        "highway", "railway station", "disambiguation", "chemical compound used in",
+    )
     history = load_history()
     used_titles = {str(f.get("title", "")).strip().lower() for f in history.get("facts", [])}
     unused_curated = [f for f in candidates if f["title"].strip().lower() not in used_titles]
@@ -764,7 +773,7 @@ def collect_live_facts() -> List[Dict[str, Any]]:
                 })
                 break
         except Exception:
-            break
+            continue
     return candidates
 
 
@@ -956,9 +965,15 @@ def send_email_smtp(
     }
 
 
-def already_ran_today(content_type: str, today_iso: str) -> bool:
-    """Returns True only if this content_type was already emailed to the team today."""
+def already_ran_today(content_type: str, today_iso: str, cooldown_hours: int = 18) -> bool:
+    """
+    Returns True if this content_type was already emailed to the team today OR
+    within the last `cooldown_hours` (guards against a cron slipping past midnight IST
+    after a manual send earlier that same evening).
+    """
     history = load_history()
+    now_ist = datetime.now(IST)
+    cutoff = now_ist - timedelta(hours=cooldown_hours)
     for pkg in history.get("packages", []):
         if pkg.get("content_type") != content_type:
             continue
@@ -966,8 +981,18 @@ def already_ran_today(content_type: str, today_iso: str) -> bool:
             continue
         if pkg.get("run_date_iso") == today_iso:
             return True
-        if str(pkg.get("created_at", "")).startswith(today_iso):
+        created_raw = str(pkg.get("created_at", ""))
+        if created_raw.startswith(today_iso):
             return True
+        if created_raw:
+            try:
+                created_dt = datetime.fromisoformat(created_raw)
+                if created_dt.tzinfo is None:
+                    created_dt = created_dt.replace(tzinfo=IST)
+                if created_dt >= cutoff:
+                    return True
+            except ValueError:
+                pass
     return False
 
 
@@ -1035,6 +1060,16 @@ def run_autonomous_job(
     dedup_result = filter_and_rank_candidates(content_type, candidates, limit=dedup_limit)
     selected_items = dedup_result["selected"]
     if content_type == "news":
+        # Merge seed fallback AFTER dedup if live RSS yielded fewer than 10 unique stories
+        if len(selected_items) < 10:
+            seed_candidates = _load_seed_news_candidates()
+            if seed_candidates:
+                dedup_result = filter_and_rank_candidates(
+                    content_type,
+                    candidates + seed_candidates,
+                    limit=dedup_limit,
+                )
+                selected_items = dedup_result["selected"]
         selected_items = _enforce_source_diversity(selected_items, limit=10, max_per_source=3)
     else:
         selected_items = selected_items[:limit]
@@ -1142,12 +1177,16 @@ def run_autonomous_job(
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
 
     if commit_ledger:
+        try:
+            rel_manifest = str(manifest_path.relative_to(BASE_DIR))
+        except ValueError:
+            rel_manifest = str(manifest_path)
         commit_selected(content_type, selected_items, package_meta={
             "package_id": slug,
             "content_type": content_type,
             "run_date_iso": today_iso,
             "subject": subject,
-            "manifest_path": str(manifest_path),
+            "manifest_path": rel_manifest,
             "email_sent": manifest.get("email_delivery", {}).get("sent", False),
             "is_test_override": bool(to_override),
         })
@@ -1408,13 +1447,17 @@ def run_combined_sample_email(
     if commit_ledger:
         today_iso = now_ist.strftime("%Y-%m-%d")
         sent_ok = manifest.get("email_delivery", {}).get("sent", False)
+        try:
+            rel_html = str(html_path.relative_to(BASE_DIR))
+        except ValueError:
+            rel_html = str(html_path)
         for ctype, pkg in [("news", news_pkg), ("facts", fact_pkg), ("vocab", vocab_pkg)]:
             commit_selected(ctype, pkg["selected_items"], package_meta={
                 "package_id": pkg["package_id"],
                 "content_type": ctype,
                 "run_date_iso": today_iso,
                 "subject": subject,
-                "manifest_path": str(html_path),
+                "manifest_path": rel_html,
                 "email_sent": sent_ok,
                 "is_test_override": bool(to_override),
             })

@@ -2,12 +2,14 @@ name: SOLE Bits & Bytes — Offline Cloud Automation (Zero Cost)
 
 on:
   schedule:
-    # Tuesday 6:00 PM IST (12:30 UTC) — Random Facts
-    - cron: "30 12 * * 2"
-    # Wednesday 6:00 PM IST (12:30 UTC) — Random Vocabulary / Thesaurus
-    - cron: "30 12 * * 3"
-    # Saturday 6:00 PM IST (12:30 UTC) — Weekly Top 10 News Highlights
-    - cron: "30 12 * * 6"
+    # Backup safety-net schedule at 18:17 IST (12:47 UTC) — fires 17 min AFTER cron-job.org (18:00 IST).
+    # If cron-job.org already sent at 18:00 IST, already_ran_today() skips cleanly (0 duplicates).
+    # Tuesday 6:17 PM IST (12:47 UTC) — Random Facts
+    - cron: "47 12 * * 2"
+    # Wednesday 6:17 PM IST (12:47 UTC) — Random Vocabulary / Thesaurus
+    - cron: "47 12 * * 3"
+    # Saturday 6:17 PM IST (12:47 UTC) — Weekly Top 10 News Highlights
+    - cron: "47 12 * * 6"
   workflow_dispatch:
     inputs:
       content_type:
@@ -21,7 +23,17 @@ on:
           - facts
           - vocab
       force:
-        description: "Force send even if already sent today"
+        description: "Force send even if already sent in the last 18 hours"
+        required: false
+        default: false
+        type: boolean
+      to_override:
+        description: "Optional test email(s) — sends ONLY here and skips team To/Cc"
+        required: false
+        default: ""
+        type: string
+      no_commit:
+        description: "Dry-ledger mode — do not commit to published_history.json (recommended with to_override)"
         required: false
         default: false
         type: boolean
@@ -46,6 +58,28 @@ jobs:
       - name: Checkout repository & content history
         uses: actions/checkout@v4
 
+      - name: Fail-fast validate required GitHub Secrets (GMAIL_USER, GMAIL_APP_PASSWORD, CONTACTS_JSON)
+        run: |
+          python3 -c "
+          import json, os, sys
+          missing = [k for k in ('GMAIL_USER', 'GMAIL_APP_PASSWORD', 'CONTACTS_JSON') if not os.environ.get(k, '').strip()]
+          if missing:
+              sys.exit(f'ERROR: Missing required GitHub Actions secret(s): {missing}. Add them in Repo Settings -> Secrets and variables -> Actions.')
+          try:
+              c = json.loads(os.environ['CONTACTS_JSON'])
+          except Exception as e:
+              sys.exit(f'ERROR: CONTACTS_JSON secret is not valid JSON: {e}')
+          sys.path.insert(0, 'scripts')
+          from package_and_deliver import resolve_recipients
+          to_list, cc_list = resolve_recipients(c)
+          if not to_list:
+              sys.exit('ERROR: CONTACTS_JSON resolved 0 TO recipients.')
+          placeholders = [e for e in (to_list + cc_list) if e.lower().endswith('@example.com')]
+          if placeholders:
+              sys.exit(f'ERROR: CONTACTS_JSON still contains placeholder emails: {placeholders}')
+          print(f'Secrets verified: GMAIL_USER set, GMAIL_APP_PASSWORD set, CONTACTS_JSON valid ({len(to_list)} TO, {len(cc_list)} CC).')
+          "
+
       - name: Install Montserrat, Caladea & Liberation Serif Fonts
         run: |
           sudo apt-get update
@@ -68,19 +102,27 @@ jobs:
       - run: pip install Pillow
 
       - name: Run Standalone Bits & Bytes Engine (Curate + Deduplicate + Render 1080x1350 Designs + /GHOST Caption + Send Email)
+        env:
+          TO_OVERRIDE: ${{ github.event.inputs.to_override }}
         run: |
           case "${{ github.event.schedule }}" in
-            "30 12 * * 2") CTYPE="facts" ;;
-            "30 12 * * 3") CTYPE="vocab" ;;
-            "30 12 * * 6") CTYPE="news" ;;
+            "47 12 * * 2") CTYPE="facts" ;;
+            "47 12 * * 3") CTYPE="vocab" ;;
+            "47 12 * * 6") CTYPE="news" ;;
             *) CTYPE="${{ github.event.inputs.content_type || 'auto' }}" ;;
           esac
-          FORCE_FLAG=""
+          EXTRA_ARGS=()
           if [ "${{ github.event.inputs.force }}" = "true" ]; then
-            FORCE_FLAG="--force"
+            EXTRA_ARGS+=(--force)
           fi
-          echo "Resolved content_type=$CTYPE (schedule='${{ github.event.schedule }}', force='$FORCE_FLAG')"
-          python3 scripts/standalone_engine.py --type "$CTYPE" --send-mail $FORCE_FLAG
+          if [ "${{ github.event.inputs.no_commit }}" = "true" ]; then
+            EXTRA_ARGS+=(--no-commit)
+          fi
+          if [ -n "$TO_OVERRIDE" ]; then
+            EXTRA_ARGS+=(--to-override "$TO_OVERRIDE")
+          fi
+          echo "Resolved content_type=$CTYPE (schedule='${{ github.event.schedule }}', extra_args='${EXTRA_ARGS[*]}')"
+          python3 scripts/standalone_engine.py --type "$CTYPE" --send-mail "${EXTRA_ARGS[@]}"
 
       - name: Upload Generated 1080x1350 Slides & Dated Carousel PDF as Workflow Artifact
         uses: actions/upload-artifact@v4
@@ -89,6 +131,7 @@ jobs:
           path: output/
 
       - name: Commit Updated Deduplication History (published_history.json & .txt)
+        if: ${{ github.event.inputs.no_commit != 'true' }}
         run: |
           git config user.name "SOLE Bits & Bytes Bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

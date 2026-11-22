@@ -496,11 +496,15 @@ def run_package_pipeline(
     manifest_path.write_text(json.dumps(package_manifest, indent=2, ensure_ascii=False), encoding="utf-8")
 
     if commit_ledger:
+        try:
+            rel_manifest = str(manifest_path.relative_to(BASE_DIR))
+        except ValueError:
+            rel_manifest = str(manifest_path)
         commit_selected(content_type, selected_items, package_meta={
             "package_id": slug,
             "content_type": content_type,
             "subject": subject,
-            "manifest_path": str(manifest_path),
+            "manifest_path": rel_manifest,
             "email_sent": False,
         })
 

@@ -163,7 +163,7 @@ Personal emails and phone numbers are never committed to the public repository. 
 ### Common CLI Commands
 
 ```bash
-cd /home/yashagrawall/bits-bytes-automation
+cd /path/to/bits-bytes-automation
 
 # 1. Dry-run generation locally (no email sent, no history committed)
 python3 scripts/standalone_engine.py --type news --no-commit
@@ -187,7 +187,7 @@ python3 scripts/build_static_assets.py
 Whenever you edit `config/contacts.json`, `scripts/`, or `assets/`, push to GitHub so GitHub Actions picks up the changes, and rebuild the local Docker engine if running locally:
 
 ```bash
-cd /home/yashagrawall/bits-bytes-automation
+cd /path/to/bits-bytes-automation
 git add .github/ config/contacts.example.json docker-compose.yml Dockerfile .dockerignore scripts/ docs/ .env.example README.md DOCUMENTATION.md CONTRIBUTING.md data/published_history.json data/published_history.txt
 git commit -m "fix: enforce exact scheduling, unify email format, purge LinkedIn & update docs"
 git push
