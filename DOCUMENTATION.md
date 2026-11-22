@@ -44,11 +44,11 @@ flowchart TD
 ```
 
 ### Execution Environments
-1. **Offline Cloud Runner (Primary):** [`.github/workflows/bits-bytes-offline-cron.yml`](.github/workflows/bits-bytes-offline-cron.yml) runs on `ubuntu-latest` via GitHub Actions cron (`30 12 * * 2`, `30 12 * * 3`, `30 12 * * 6` UTC).
-   - Maps `github.event.schedule` explicitly to `facts`, `vocab`, or `news` so even a delayed runner can never send the wrong content type.
-   - Protected by a workflow `concurrency` lock and `already_ran_today()` idempotency check.
-   - Uploads `output/` as a workflow artifact and commits `data/published_history.json` & `.txt` back to `main` with `git pull --rebase` and `[skip ci]`.
-   - Supports manual triggers via `workflow_dispatch` (`auto`, `news`, `facts`, `vocab`, plus optional `force` boolean).
+1. **Offline Cloud Runner (Primary):** [`.github/workflows/bits-bytes-offline-cron.yml`](.github/workflows/bits-bytes-offline-cron.yml) runs on `ubuntu-latest` via a dual-trigger setup:
+   - **Exact-time primary trigger (`cron-job.org`):** Dispatches `workflow_dispatch` at **6:00 PM IST (`12:30 UTC`)** on Tue/Wed/Sat so delivery avoids GitHub Actions' native cron queue jitter.
+   - **Backup safety-net schedule (GitHub Actions `on.schedule`):** Fires at **6:17 PM IST (`47 12 * * 2`, `47 12 * * 3`, `47 12 * * 6` UTC)**, mapping `github.event.schedule` explicitly to `facts`, `vocab`, or `news`. If `cron-job.org` already delivered at 6:00 PM IST, `already_ran_today()` (18-hour cooldown) skips cleanly with zero duplicates.
+   - Protected by a workflow `concurrency` lock, uploads `output/` as a workflow artifact, and commits `data/published_history.json` & `.txt` back to `main` with `git pull --rebase` and `[skip ci]`.
+   - Supports manual triggers via `workflow_dispatch` (`auto`, `news`, `facts`, `vocab`, plus `force`, `to_override`, and `no_commit`).
 2. **Local Docker Container (Optional):** [`docker-compose.yml`](docker-compose.yml) + [`Dockerfile`](Dockerfile) run a single persistent (`restart: unless-stopped`) `bits-bytes-engine` service (`http://127.0.0.1:8765/health`). Internal cron is disabled by default (`ENABLE_DAEMON_SCHEDULER=false`) to prevent split-brain duplicate sends alongside GitHub Actions. If you disable GitHub Actions and set `ENABLE_DAEMON_SCHEDULER=true`, `daemon_loop` polls every 60 seconds and fires strictly on Tue/Wed/Sat at `>= 18:00 IST`.
 
 ---

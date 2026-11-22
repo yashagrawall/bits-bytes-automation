@@ -720,7 +720,8 @@ def collect_live_news() -> List[Dict[str, Any]]:
                     "popularity_score": pop,
                 })
                 kept_from_feed += 1
-        except Exception:
+        except Exception as exc:
+            print(f"[RSS WARN] {source_name} ({feed_url}) failed: {exc}", file=sys.stderr, flush=True)
             continue
 
     return candidates
@@ -772,7 +773,8 @@ def collect_live_facts() -> List[Dict[str, Any]]:
                     "popularity_score": 8.4,
                 })
                 break
-        except Exception:
+        except Exception as exc:
+            print(f"[WIKI WARN] Wikipedia random summary fetch failed: {exc}", file=sys.stderr, flush=True)
             continue
     return candidates
 
@@ -813,9 +815,11 @@ def _fetch_live_vocab_fallback(existing_words: set) -> List[Dict[str, Any]]:
                     })
                     if len(extras) >= 3:
                         return extras
-                except Exception:
+                except Exception as exc:
+                    print(f"[VOCAB WARN] Dictionary API lookup failed for '{w}': {exc}", file=sys.stderr, flush=True)
                     continue
-        except Exception:
+        except Exception as exc:
+            print(f"[VOCAB WARN] Datamuse lookup failed for topic '{topic}': {exc}", file=sys.stderr, flush=True)
             continue
     return extras
 
@@ -1022,6 +1026,7 @@ def run_autonomous_job(
     date_code: Optional[str] = None,
     to_override: Optional[str] = None,
     force: bool = False,
+    allow_seed_fallback: Optional[bool] = None,
 ) -> Dict[str, Any]:
     """
     Executes the full standalone pipeline for `news`, `facts`, or `vocab`:
@@ -1060,8 +1065,9 @@ def run_autonomous_job(
     dedup_result = filter_and_rank_candidates(content_type, candidates, limit=dedup_limit)
     selected_items = dedup_result["selected"]
     if content_type == "news":
+        use_seed = (not send_mail) if allow_seed_fallback is None else allow_seed_fallback
         # Merge seed fallback ONLY for offline/dry-runs (never mix placeholder URLs into live emails)
-        if len(selected_items) < 10 and not send_mail:
+        if len(selected_items) < 10 and use_seed:
             seed_candidates = _load_seed_news_candidates()
             if seed_candidates:
                 dedup_result = filter_and_rank_candidates(
@@ -1071,7 +1077,7 @@ def run_autonomous_job(
                 )
                 selected_items = dedup_result["selected"]
         selected_items = _enforce_source_diversity(selected_items, limit=10, max_per_source=3)
-        if send_mail and len(selected_items) < 3:
+        if (send_mail or not use_seed) and len(selected_items) < 3:
             raise RuntimeError(
                 f"Live RSS feeds returned only {len(selected_items)} unique news items (need >= 3); "
                 "refusing to send email with placeholder seed links."
@@ -1320,7 +1326,14 @@ def run_combined_sample_email(
     sender = contacts.get("sender", {})
     to_emails, cc_emails = resolve_recipients(contacts)
 
-    news_pkg = run_autonomous_job("news", send_mail=False, commit_ledger=False, date_code=date_code, force=True)
+    news_pkg = run_autonomous_job(
+        "news",
+        send_mail=False,
+        commit_ledger=False,
+        date_code=date_code,
+        force=True,
+        allow_seed_fallback=not send_mail,
+    )
     fact_pkg = run_autonomous_job("facts", send_mail=False, commit_ledger=False, date_code=date_code, force=True)
     vocab_pkg = run_autonomous_job("vocab", send_mail=False, commit_ledger=False, date_code=date_code, force=True)
 

@@ -44,7 +44,7 @@ Runs automatically via **GitHub Actions** even when no local machine is powered 
    - `GMAIL_APP_PASSWORD` — 16-character Google App Password (requires 2-Step Verification)
    - `CONTACTS_JSON` — Full JSON content of your private `config/contacts.json` (keeps member emails & phones out of the public repo)
    - `GEMINI_API_KEY` *(optional)* — Optional LLM caption enrichment (only when `ENABLE_LLM_CAPTIONS=true`)
-3. Enable GitHub Actions. The cron workflow (`.github/workflows/bits-bytes-offline-cron.yml`) runs every Tue/Wed/Sat at 6:00 PM IST, or can be triggered manually via **Actions → Run workflow** (with optional `force` toggle).
+3. Enable GitHub Actions. Delivery uses a dual-trigger setup: `cron-job.org` fires `workflow_dispatch` at **6:00 PM IST** on Tue/Wed/Sat for exact timing, while GitHub Actions' built-in schedule (`.github/workflows/bits-bytes-offline-cron.yml`, `47 12 * * 2/3/6` UTC = **6:17 PM IST**) acts as a backup safety net (skipped automatically via the 18-hour idempotency guard if already sent). You can also trigger manually via **Actions → Run workflow** (`content_type`, `force`, `to_override`, `no_commit`).
 
 ### 2. Local CLI (Dry-Run & Testing)
 ```bash
