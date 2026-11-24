@@ -17,6 +17,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Verify stdlib-only contacts & secret check import (before Pillow install)
+        run: |
+          python3 -c "
+          import sys
+          sys.path.insert(0, 'scripts')
+          from package_and_deliver import load_contacts, resolve_recipients
+          to_list, cc_list = resolve_recipients(load_contacts())
+          assert len(to_list) > 0, 'TO list cannot be empty'
+          assert 'render_designs' not in sys.modules, 'package_and_deliver must not eagerly import render_designs/PIL'
+          print(f'Stdlib-only import verified ({len(to_list)} TO, {len(cc_list)} CC).')
+          "
+
       - name: Install Fonts (Montserrat, Caladea & Liberation)
         run: |
           sudo apt-get update

@@ -14,7 +14,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from dedup_ledger import commit_selected, filter_and_rank_candidates
 from ghost_caption import build_captions
-from render_designs import render_package_designs
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CONTACTS_PATH = BASE_DIR / "config" / "contacts.json"
@@ -422,6 +421,7 @@ def run_package_pipeline(
     pkg_dir.mkdir(parents=True, exist_ok=True)
 
     # 1. Render Branded 1080x1350 JPGs, Dated Carousel PDF, and Canva CSV
+    from render_designs import render_package_designs
     design_res = render_package_designs(content_type, selected_items, date_code, pkg_dir)
 
     # 2. Build /GHOST Instagram Caption & Hashtags
