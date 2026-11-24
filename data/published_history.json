@@ -2,7 +2,7 @@
   "metadata": {
     "project": "SOLE Bits & Bytes Automation (IGIT Sarang)",
     "created_at": "2026-11-18T23:58:00+05:30",
-    "last_updated": "2026-11-22T19:49:52.309457+05:30",
+    "last_updated": "2026-11-24T18:29:10.502054+05:30",
     "drive_ledger_file_id": null
   },
   "news": [
@@ -127,7 +127,21 @@
       "date_added": "2026-11-21T13:48:03.552641+05:30"
     }
   ],
-  "facts": [],
+  "facts": [
+    {
+      "category": "LITERATURE & COMPUTING HISTORY",
+      "title": "The First Known Computer Algorithm Was Published With Literary Footnotes Longer Than the Paper Itself",
+      "fact": "In 1843, Ada Lovelace translated Luigi Menabrea's French article on Charles Babbage's Analytical Engine and appended seven 'Notes' labeled A through G. Her footnotes were nearly three times longer than the original engineering paper and contained Note G, the first published algorithm for computing Bernoulli numbers.",
+      "context": "Lovelace called her approach 'poetical science', blending mathematical logic with literary imagination. She also predicted that computing machines could one day compose music and manipulate symbols beyond pure arithmetic.",
+      "source": "Bodleian Libraries, University of Oxford",
+      "url": "https://bodleian.ox.ac.uk/",
+      "relevance_score": 9.6,
+      "popularity_score": 9.4,
+      "combined_score": 9.5,
+      "hash": "c8ef9ceafa540095",
+      "date_added": "2026-11-24T18:29:10.502013+05:30"
+    }
+  ],
   "vocab": [],
   "packages": [
     {
@@ -139,6 +153,16 @@
       "email_sent": true,
       "social_published": false,
       "created_at": "2026-11-21T13:48:03.552641+05:30"
+    },
+    {
+      "package_id": "2026-Nov-W4-Tuesday_facts",
+      "content_type": "facts",
+      "run_date_iso": "2026-11-24",
+      "subject": "[2026-Nov-W4-Tuesday] : Bits & Bytes Social Media Post : Random Facts",
+      "manifest_path": "output/2026-Nov-W4-Tuesday_facts/package_manifest.json",
+      "email_sent": true,
+      "is_test_override": false,
+      "created_at": "2026-11-24T18:29:10.502013+05:30"
     }
   ]
 }

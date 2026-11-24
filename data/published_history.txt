@@ -1,6 +1,6 @@
 ====================================================================
 SOLE (IGIT SARANG) — BITS & BYTES PUBLISHED CONTENT LEDGER
-Last Updated: 2026-11-22T19:49:52.309457+05:30
+Last Updated: 2026-11-24T18:29:10.502054+05:30
 ====================================================================
 
 --- WEEKLY TOP 10 NEWS HIGHLIGHTS (10 items) ---
@@ -15,6 +15,7 @@ Last Updated: 2026-11-22T19:49:52.309457+05:30
 9. [2026-11-21] Researcher plants 2m canaries into the AI supply chain. A privacy disaster surfaced. (Ars Technica) | URL: https://arstechnica.com/security/2026/11/a-leaky-ai-supply-chain-is-exposing-secret-user-data-at-an-alarming-rate/ | Hash: fa42d3799130dbac
 10. [2026-11-21] Why a shortage of clinical psychologists in Keralam govt hospitals is leaving people with intellectual disabilities waiting for certificates (The Hindu National) | URL: https://www.thehindu.com/news/national/kerala/why-a-shortage-of-clinical-psychologists-in-keralam-govt-hospitals-is-leaving-people-with-intellectual-disabilities-waiting-for-certificates/article71727630.ece | Hash: ce67fa0994720a4a
 
---- RANDOM FACTS (0 items) ---
+--- RANDOM FACTS (1 items) ---
+1. [2026-11-24] The First Known Computer Algorithm Was Published With Literary Footnotes Longer Than the Paper Itself: In 1843, Ada Lovelace translated Luigi Menabrea's French article on Charles Babbage's Analytical Engine and appended seven 'Notes' labeled A through G. Her footnotes were nearly three times longer than the original engineering paper and contained Note G, the first published algorithm for computing Bernoulli numbers. | Hash: c8ef9ceafa540095
 
 --- RANDOM VOCABULARY / THESAURUS (0 items) ---
