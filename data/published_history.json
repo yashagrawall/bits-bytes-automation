@@ -2,7 +2,7 @@
   "metadata": {
     "project": "SOLE Bits & Bytes Automation (IGIT Sarang)",
     "created_at": "2026-11-18T23:58:00+05:30",
-    "last_updated": "2026-11-24T18:29:10.502054+05:30",
+    "last_updated": "2026-11-25T18:00:46.612703+05:30",
     "drive_ledger_file_id": null
   },
   "news": [
@@ -142,7 +142,32 @@
       "date_added": "2026-11-24T18:29:10.502013+05:30"
     }
   ],
-  "vocab": [],
+  "vocab": [
+    {
+      "word": "Vellichor",
+      "pronunciation": "/ˈvɛl.ɪ.kɔːr/",
+      "part_of_speech": "noun",
+      "definition": "The strange wistfulness and rich atmosphere of used bookstores, filled with thousands of old books you may never have time to read.",
+      "example": "Walking into the quiet corner of the central library before semester exams gave everyone a sudden sense of vellichor.",
+      "synonyms": [
+        "bibliophilia",
+        "nostalgia",
+        "reverie",
+        "wistfulness"
+      ],
+      "antonyms": [
+        "indifference",
+        "apathy",
+        "detachment"
+      ],
+      "etymology": "Coined by John Koenig in The Dictionary of Obscure Sorrows, blending 'vellum' (parchment) and 'ichor' (ethereal fluid).",
+      "relevance_score": 9.5,
+      "popularity_score": 9.3,
+      "combined_score": 9.4,
+      "hash": "d76b6854dcb2e57e",
+      "date_added": "2026-11-25T18:00:46.612662+05:30"
+    }
+  ],
   "packages": [
     {
       "package_id": "2026-Nov-W3-Saturday_news",
@@ -163,6 +188,16 @@
       "email_sent": true,
       "is_test_override": false,
       "created_at": "2026-11-24T18:29:10.502013+05:30"
+    },
+    {
+      "package_id": "2026-Nov-W4-Wednesday_vocab",
+      "content_type": "vocab",
+      "run_date_iso": "2026-11-25",
+      "subject": "[2026-Nov-W4-Wednesday] : Bits & Bytes Social Media Post : Random Vocabulary / Thesaurus",
+      "manifest_path": "output/2026-Nov-W4-Wednesday_vocab/package_manifest.json",
+      "email_sent": true,
+      "is_test_override": false,
+      "created_at": "2026-11-25T18:00:46.612662+05:30"
     }
   ]
 }
