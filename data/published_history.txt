@@ -1,9 +1,9 @@
 ====================================================================
 SOLE (IGIT SARANG) — BITS & BYTES PUBLISHED CONTENT LEDGER
-Last Updated: 2026-11-25T18:00:46.612703+05:30
+Last Updated: 2026-11-28T18:01:09.492015+05:30
 ====================================================================
 
---- WEEKLY TOP 10 NEWS HIGHLIGHTS (10 items) ---
+--- WEEKLY TOP 10 NEWS HIGHLIGHTS (20 items) ---
 1. [2026-11-21] ‘All human, no AI’ Riemann hypothesis proof out on same day as Claude’s claim (The Hindu Sci-Tech) | URL: https://www.thehindu.com/sci-tech/science/all-human-no-ai-riemann-hypothesis-proof-out-on-same-day-as-claudes-claim/article71727336.ece | Hash: 8fef05d8c13fad19
 2. [2026-11-21] AI cracks math’s most famous problem. Have mathematicians lost a guiding light? (The Hindu Sci-Tech) | URL: https://www.thehindu.com/sci-tech/science/anthropic-scientist-claims-proof-of-maths-most-famous-problem-with-ai-help/article71727161.ece | Hash: cf4a4d5e694453f9
 3. [2026-11-21] Watch | How has ‘Project Cheetah’ progressed in India? (The Hindu Sci-Tech) | URL: https://www.thehindu.com/sci-tech/energy-and-environment/how-has-project-cheetah-progressed-in-india/article66230373.ece | Hash: 6128a1ba32cef95b
@@ -14,6 +14,16 @@ Last Updated: 2026-11-25T18:00:46.612703+05:30
 8. [2026-11-21] Meta reconsiders 2030 net-zero goal amid record emissions from AI data centers (Ars Technica) | URL: https://arstechnica.com/ai/2026/11/meta-reconsiders-2030-net-zero-goal-amid-record-emissions-from-ai-data-centers/ | Hash: 18f804ec2e48f38c
 9. [2026-11-21] Researcher plants 2m canaries into the AI supply chain. A privacy disaster surfaced. (Ars Technica) | URL: https://arstechnica.com/security/2026/11/a-leaky-ai-supply-chain-is-exposing-secret-user-data-at-an-alarming-rate/ | Hash: fa42d3799130dbac
 10. [2026-11-21] Why a shortage of clinical psychologists in Keralam govt hospitals is leaving people with intellectual disabilities waiting for certificates (The Hindu National) | URL: https://www.thehindu.com/news/national/kerala/why-a-shortage-of-clinical-psychologists-in-keralam-govt-hospitals-is-leaving-people-with-intellectual-disabilities-waiting-for-certificates/article71727630.ece | Hash: ce67fa0994720a4a
+11. [2026-11-28] ISRO invites Indian industry to develop human space flight analog simulation facility (The Hindu Sci-Tech) | URL: https://www.thehindu.com/sci-tech/science/isro-invites-indian-industry-to-develop-human-space-flight-analog-simulation-facility/article71751015.ece | Hash: d26301b8c5811699
+12. [2026-11-28] The changing scents of a warming world (The Hindu Sci-Tech) | URL: https://www.thehindu.com/sci-tech/energy-and-environment/the-changing-scents-of-a-warming-world/article71741960.ece | Hash: 8d58eb5c05c7ad2a
+13. [2026-11-28] Prototype of Chandrayaan-5/LUPEX rover unveiled (The Hindu Sci-Tech) | URL: https://www.thehindu.com/sci-tech/science/prototype-of-chandrayaan-5lupex-rover-unveiled/article71746762.ece | Hash: 1c582604ee01f964
+14. [2026-11-28] IBM quantum computer solves problem classical computers can’t in just 15 minutes (ScienceDaily Tech) | URL: https://www.sciencedaily.com/releases/2026/11/261123231244.htm | Hash: 2dd430a5ab248704
+15. [2026-11-28] Harvard’s tiny UV light chip could help shrink quantum computers (ScienceDaily Tech) | URL: https://www.sciencedaily.com/releases/2026/11/261126063333.htm | Hash: 8f4ff479c9846601
+16. [2026-11-28] A space telescope hunting for dark matter just discovered something unexpected (ScienceDaily Tech) | URL: https://www.sciencedaily.com/releases/2026/11/261124055852.htm | Hash: 7d1a0dc10d8cbcaf
+17. [2026-11-28] Honey by Elizabeth Jenkins review - a rediscovered 60s classic of sex, money and power (The Guardian Books) | URL: https://www.theguardian.com/books/2026/nov/26/honey-by-elizabeth-jenkins-review-a-rediscovered-60s-classic-of-sex-money-and-power | Hash: d825ce05e96d926b
+18. [2026-11-28] Patrick Radden Keefe’s London Falling named Waterstones book of the year (The Guardian Books) | URL: https://www.theguardian.com/books/2026/nov/26/patrick-radden-keefes-london-falling-named-waterstones-book-of-the-year | Hash: 37af707e392c8a6e
+19. [2026-11-28] ‘I am scared’: Careless People author Sarah Wynn-Williams on living under a gag order - and why it’s time to speak out against big tech (The Guardian Books) | URL: https://www.theguardian.com/books/2026/nov/27/careless-people-author-sarah-wynn-williams-the-silence-is-mine-it-doesnt-have-to-be-yours | Hash: 225e6d58414713e6
+20. [2026-11-28] Rahul, Kharge, Akhilesh and Mamata to attend INDIA bloc’s constitution march in Bhopal; Congress awaits venue nod (The Hindu National) | URL: https://www.thehindu.com/news/national/rahul-kharge-akhilesh-and-mamata-to-attend-india-blocs-constitution-march-in-bhopal-congress-awaits-venue-nod/article71754356.ece | Hash: 69fa15565c2d8025
 
 --- RANDOM FACTS (1 items) ---
 1. [2026-11-24] The First Known Computer Algorithm Was Published With Literary Footnotes Longer Than the Paper Itself: In 1843, Ada Lovelace translated Luigi Menabrea's French article on Charles Babbage's Analytical Engine and appended seven 'Notes' labeled A through G. Her footnotes were nearly three times longer than the original engineering paper and contained Note G, the first published algorithm for computing Bernoulli numbers. | Hash: c8ef9ceafa540095

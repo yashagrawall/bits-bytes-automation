@@ -2,7 +2,7 @@
   "metadata": {
     "project": "SOLE Bits & Bytes Automation (IGIT Sarang)",
     "created_at": "2026-11-18T23:58:00+05:30",
-    "last_updated": "2026-11-25T18:00:46.612703+05:30",
+    "last_updated": "2026-11-28T18:01:09.492015+05:30",
     "drive_ledger_file_id": null
   },
   "news": [
@@ -125,6 +125,126 @@
       "combined_score": 9.25,
       "hash": "ce67fa0994720a4a",
       "date_added": "2026-11-21T13:48:03.552641+05:30"
+    },
+    {
+      "category": "SCIENCE & TECH",
+      "headline": "ISRO invites Indian industry to develop human space flight analog simulation facility",
+      "summary": "The Bengaluru-based HSFC has issued an Expression of Interest in this regard on November 26, 2026.",
+      "source": "The Hindu Sci-Tech",
+      "url": "https://www.thehindu.com/sci-tech/science/isro-invites-indian-industry-to-develop-human-space-flight-analog-simulation-facility/article71751015.ece",
+      "relevance_score": 9.2,
+      "popularity_score": 9.0,
+      "combined_score": 9.1,
+      "hash": "d26301b8c5811699",
+      "date_added": "2026-11-28T18:01:09.491967+05:30"
+    },
+    {
+      "category": "SCIENCE & TECH",
+      "headline": "The changing scents of a warming world",
+      "summary": "Be it in a forest or among the flowers in a garden, the air is enriched in volatile organic compounds, whose profiles climate change is beginning to alter",
+      "source": "The Hindu Sci-Tech",
+      "url": "https://www.thehindu.com/sci-tech/energy-and-environment/the-changing-scents-of-a-warming-world/article71741960.ece",
+      "relevance_score": 8.9,
+      "popularity_score": 8.6,
+      "combined_score": 8.75,
+      "hash": "8d58eb5c05c7ad2a",
+      "date_added": "2026-11-28T18:01:09.491967+05:30"
+    },
+    {
+      "category": "SCIENCE & TECH",
+      "headline": "Prototype of Chandrayaan-5/LUPEX rover unveiled",
+      "summary": "The Chandrayaan-5/LuPEX mission is the fifth mission in the Chandrayaan series of lunar missions; JAXA, the Japanese space agency, unveiled the rover in Japan on November 25",
+      "source": "The Hindu Sci-Tech",
+      "url": "https://www.thehindu.com/sci-tech/science/prototype-of-chandrayaan-5lupex-rover-unveiled/article71746762.ece",
+      "relevance_score": 8.9,
+      "popularity_score": 8.6,
+      "combined_score": 8.75,
+      "hash": "1c582604ee01f964",
+      "date_added": "2026-11-28T18:01:09.491967+05:30"
+    },
+    {
+      "category": "COMPUTING",
+      "headline": "IBM quantum computer solves problem classical computers can’t in just 15 minutes",
+      "summary": "IBM and University of Chicago researchers have demonstrated that a quantum computer can complete an extraordinarily complex calculation in just 15 minutes, beyond the practical reach of leading classical computing methods. A novel error-detection technique...",
+      "source": "ScienceDaily Tech",
+      "url": "https://www.sciencedaily.com/releases/2026/11/261123231244.htm",
+      "relevance_score": 9.1,
+      "popularity_score": 8.3,
+      "combined_score": 8.7,
+      "hash": "2dd430a5ab248704",
+      "date_added": "2026-11-28T18:01:09.491967+05:30"
+    },
+    {
+      "category": "COMPUTING",
+      "headline": "Harvard’s tiny UV light chip could help shrink quantum computers",
+      "summary": "Harvard-led researchers have developed a microscopic device that generates 120 times more ultraviolet light than previous comparable approaches by efficiently converting red light into UV. The breakthrough could unlock smaller quantum computers,...",
+      "source": "ScienceDaily Tech",
+      "url": "https://www.sciencedaily.com/releases/2026/11/261126063333.htm",
+      "relevance_score": 8.7,
+      "popularity_score": 8.6,
+      "combined_score": 8.65,
+      "hash": "8f4ff479c9846601",
+      "date_added": "2026-11-28T18:01:09.491967+05:30"
+    },
+    {
+      "category": "COMPUTING",
+      "headline": "A space telescope hunting for dark matter just discovered something unexpected",
+      "summary": "ESA’s Euclid space telescope has discovered its first previously unknown comet, despite being designed to study distant galaxies and the mysteries of the dark Universe. The icy object is approximately 1.3 billion kilometers from Earth and follows an...",
+      "source": "ScienceDaily Tech",
+      "url": "https://www.sciencedaily.com/releases/2026/11/261124055852.htm",
+      "relevance_score": 8.7,
+      "popularity_score": 8.6,
+      "combined_score": 8.65,
+      "hash": "7d1a0dc10d8cbcaf",
+      "date_added": "2026-11-28T18:01:09.491967+05:30"
+    },
+    {
+      "category": "LITERATURE & BOOKS",
+      "headline": "Honey by Elizabeth Jenkins review - a rediscovered 60s classic of sex, money and power",
+      "summary": "The beautiful and mercenary Honey is a monstrously compelling character, in a novel with the ruthlessness of Richard Yates but more wit ‘A sweet white grape of a book” is how Virginia Woolf described Elizabeth Jenkins’s first novel, Virginia Water,...",
+      "source": "The Guardian Books",
+      "url": "https://www.theguardian.com/books/2026/nov/26/honey-by-elizabeth-jenkins-review-a-rediscovered-60s-classic-of-sex-money-and-power",
+      "relevance_score": 8.9,
+      "popularity_score": 8.3,
+      "combined_score": 8.6,
+      "hash": "d825ce05e96d926b",
+      "date_added": "2026-11-28T18:01:09.491967+05:30"
+    },
+    {
+      "category": "LITERATURE & BOOKS",
+      "headline": "Patrick Radden Keefe’s London Falling named Waterstones book of the year",
+      "summary": "The word-of-mouth success of the journalist’s investigation into the death of a London teenager is ‘one of the defining features of the literary year’ London Falling, Patrick Radden Keefe’s bestselling investigation into the mysterious death of a London...",
+      "source": "The Guardian Books",
+      "url": "https://www.theguardian.com/books/2026/nov/26/patrick-radden-keefes-london-falling-named-waterstones-book-of-the-year",
+      "relevance_score": 8.9,
+      "popularity_score": 8.3,
+      "combined_score": 8.6,
+      "hash": "37af707e392c8a6e",
+      "date_added": "2026-11-28T18:01:09.491967+05:30"
+    },
+    {
+      "category": "LITERATURE & BOOKS",
+      "headline": "‘I am scared’: Careless People author Sarah Wynn-Williams on living under a gag order - and why it’s time to speak out against big tech",
+      "summary": "Since writing her bestselling exposé, the former employee has been forbidden from speaking publicly about Meta. In an exclusive extract from her Orwell lecture, she talks about corporate lawfare, and the growing backlash against NDAs George Orwell...",
+      "source": "The Guardian Books",
+      "url": "https://www.theguardian.com/books/2026/nov/27/careless-people-author-sarah-wynn-williams-the-silence-is-mine-it-doesnt-have-to-be-yours",
+      "relevance_score": 8.5,
+      "popularity_score": 8.6,
+      "combined_score": 8.55,
+      "hash": "225e6d58414713e6",
+      "date_added": "2026-11-28T18:01:09.491967+05:30"
+    },
+    {
+      "category": "INDIA & POLICY",
+      "headline": "Rahul, Kharge, Akhilesh and Mamata to attend INDIA bloc’s constitution march in Bhopal; Congress awaits venue nod",
+      "summary": "The Congress plans to take out the march along a 4-km stretch from the statue of B.R. Ambedkar at the Board Office Square to the Lal Parade Ground",
+      "source": "The Hindu National",
+      "url": "https://www.thehindu.com/news/national/rahul-kharge-akhilesh-and-mamata-to-attend-india-blocs-constitution-march-in-bhopal-congress-awaits-venue-nod/article71754356.ece",
+      "relevance_score": 8.7,
+      "popularity_score": 8.3,
+      "combined_score": 8.5,
+      "hash": "69fa15565c2d8025",
+      "date_added": "2026-11-28T18:01:09.491967+05:30"
     }
   ],
   "facts": [
@@ -198,6 +318,16 @@
       "email_sent": true,
       "is_test_override": false,
       "created_at": "2026-11-25T18:00:46.612662+05:30"
+    },
+    {
+      "package_id": "2026-Nov-W4-Saturday_news",
+      "content_type": "news",
+      "run_date_iso": "2026-11-28",
+      "subject": "[2026-Nov-W4-Saturday] : Bits & Bytes Social Media Post : Weekly Top 10 News Highlights",
+      "manifest_path": "output/2026-Nov-W4-Saturday_news/package_manifest.json",
+      "email_sent": true,
+      "is_test_override": false,
+      "created_at": "2026-11-28T18:01:09.491967+05:30"
     }
   ]
 }
